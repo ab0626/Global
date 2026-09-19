@@ -199,7 +199,10 @@ poor labels.
 
 ## Execution status
 
-The full EC2 experiment is **pending working access**. A local smoke run used only
+The full 2019-03-10..17 slice (767 of 768 quarter-hours, 4.42M Mentions rows) was
+run locally through the 13-run comparison matrix; the write-up and derived tables
+are in `docs/article-graph-results.md` and `docs/article-graph-results/`. The EC2
+run remains **pending working access**. The earlier local smoke run used only
 `20190315120000.mentions.csv` and its Events file: 7,173 Mentions rows, 1,017 URLs,
 107 candidate wire copies collapsed. This is one quarter-hour update, not the
 requested week or a representative random sample.

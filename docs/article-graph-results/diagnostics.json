@@ -1,0 +1,45 @@
+{
+  "keyword_totals": {
+    "crash_grounding": [
+      29411,
+      19238
+    ],
+    "christchurch": [
+      14239,
+      9171
+    ],
+    "idai": [
+      2283,
+      1467
+    ],
+    "brexit": [
+      16961,
+      10183
+    ],
+    "idai_specific": [
+      339,
+      281
+    ]
+  },
+  "idai_specific_regex": "(^|[^a-z])idai([^a-z]|$)",
+  "specificity_note": "Post hoc diagnostic, not independent labels or a retuned model.",
+  "pair_checks": {
+    "pairs": 21870583,
+    "ordered_no_self_edges": true,
+    "scores_valid": true,
+    "equal_weights_valid": true,
+    "combined_03_edges_with_no_event_overlap": 1417459
+  },
+  "translation_metadata_nonempty_rows": 0,
+  "language_stratification": "Unavailable: all translation fields blank; language not inferred from host.",
+  "accuracy_metrics": {
+    "candidate_recall": null,
+    "pair_precision": null,
+    "pair_recall": null,
+    "bcubed": null,
+    "ceafe": null,
+    "reason": "No independent and sufficiently complete same-story labels."
+  },
+  "canonical_weighting": "A wire group matches if any URL alias matches; it is counted once per cluster.",
+  "all_13_assignment_and_edge_checks_passed": true
+}
