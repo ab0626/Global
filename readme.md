@@ -238,6 +238,40 @@ centroid cosine. The benchmark is 15 URL regexes (still proxies). Full-week
 findings and the recommended configuration are in
 `docs/article-graph-results.md`, section 3.
 
+## One-day attention slice (April 15, 2019)
+
+Raw Mentions + Events + GKG -> typed Parquet -> atomic events -> blocked
+clustering -> macro-event / country-attention store -> `/api/v2/attention/*`.
+
+```sh
+for t in mentions events gkg; do
+  uv run python src/gdelt/fetch.py --table $t --start-date 20190415 \
+    --end-date 20190415 --output-dir data/day/$t
+done
+uv run python -m attention.preprocess --date 20190415 --mentions data/day/mentions \
+  --events data/day/events --gkg data/day/gkg \
+  --domain-lookup ~/gdelt-reference/domains_by_country.txt --output data/clean/20190415
+uv run python -m attention.atomic --clean data/clean/20190415 --output data/features/20190415
+uv run python -m attention.cluster --features data/features/20190415 --output results/day-clusters-1
+uv run python -m attention.materialize --clean data/clean/20190415 \
+  --features data/features/20190415 --clusters results/day-clusters-1 \
+  --output data/store/20190415
+GDELT_ATTENTION_DATA=data/store/20190415 uv run uvicorn api.app:app
+```
+
+Endpoints: `GET /api/v2/attention/events`, `/events/{id}`, `/events/{id}/timeline`,
+`/events/{id}/countries`, `/event-types`, `/event-types/{type}/countries`,
+`/countries`. Every response carries `meta` with denominators and semantics.
+
+Caveats: `mention_time` is GDELT observation time, not publication time; onset
+is observed media-attention onset (later of 3rd distinct outlet and the 10th
+percentile of documents), not "when a country found out"; `event_types` are
+provisional theme/CAMEO rules; country is publisher country from the GDELT
+domain lookup (confidence and method in `sources`). The macro-events are a
+filtered baseline (>= 50 documents, >= 10 effective sources, coherence >= 0.7),
+not validated against manual labels - the largest cluster (Notre-Dame) still
+contains unrelated documents.
+
 ## Outputs and validation
 
 | File | Contents |

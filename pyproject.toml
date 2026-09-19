@@ -46,7 +46,7 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ty.src]
-include = ["story_clusters.py", "clustering_experiment.py", "tests"]
+include = ["story_clusters.py", "clustering_experiment.py", "attention", "api/attention.py", "tests"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
