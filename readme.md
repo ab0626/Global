@@ -170,6 +170,22 @@ output directory with `--prepared results/prepared-input`; the input settings ar
 checked and provenance is inherited. Intermediate data and reports stay out of
 Git. Use `--help` for resource bounds; do not interpret an aborted run as a result.
 
+## v2 article graph
+
+```sh
+uv run python clustering_v2.py --prepared results/prepared-input \
+  --output results/v2 --max-pair-contributions 3000000000 \
+  --max-candidate-pairs 80000000
+```
+
+Runs the fixed v1 reference (combined 0.3 Leiden) next to: URL tokens cleaned of
+hex/numeric junk, near-uniform-by-day tokens and per-host boilerplate; an Events
+`actor:`/`geo:` label channel; an evidence gate (two channels agree or one is
+>= 0.6) at 0.2/0.3/0.4; and a story-family layer linking incident clusters by
+centroid cosine. The benchmark is 15 URL regexes (still proxies). Full-week
+findings and the recommended configuration are in
+`docs/article-graph-results.md`, section 3.
+
 ## Outputs and validation
 
 | File | Contents |
