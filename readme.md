@@ -111,6 +111,64 @@ The audit counts nonempty records, URLs and parsed source-language codes.
    though they were disjoint, or sum syndication copies as independent evidence.
 
 Settings are available as flags; use `uv run python story_clusters.py --help`.
+The support default remains two (`--min-shared-articles 1` relaxes it).
+Add `--methods components louvain leiden` to include weighted Leiden modularity;
+both community algorithms use resolution one.
+
+## Controlled article-graph experiment
+
+After the same list/download steps above:
+
+```sh
+uv run python clustering_experiment.py \
+  --mentions data/mentions --events data/events \
+  --start-date 20190310 --end-date 20190317 --allow-partial \
+  --output results/article-comparison
+```
+
+This runs 13 fixed comparisons on identical input and eligible wire groups:
+
+- Event projection at Jaccard 0.1, shared-article support one/two, each with
+  components, Louvain and Leiden.
+- Article graph with event-ID-only or URL-word-only cosine at 0.3, using Leiden.
+- Equal event/URL cosine average at 0.15/0.3/0.45 using Leiden, plus components
+  and Louvain on the identical 0.3 graph.
+
+Each channel uses binary features weighted by `log((N+1)/(df+1))+1`, normalized
+per canonical article. URL words are unioned across a wire group's decoded paths;
+hostnames and queries are excluded. Date directory segments, long numeric IDs,
+short tokens and fixed stopwords are removed. This is lexical, not multilingual
+semantic matching. A missing channel contributes zero, without renormalizing the
+other channel. Events actor/location labels are inspection metadata only.
+
+Candidate pairs are the symmetric union of each channel's top 50 neighbors,
+then scored in both channels. Ties use article order. Features in more than 2,000
+canonical articles are excluded before normalization/retrieval. Blocked sparse
+multiplication avoids a complete article-by-article matrix, with explicit bounds
+on feature pair contributions, block nonzeros and candidate pairs. These bounds
+abort rather than silently truncate; frequency filtering and top-k retrieval
+still lose possible matches. Defaults are exploratory, not fitted to story labels.
+
+Article runs use the same confidence, roundup and recurring-event eligibility as
+event runs. They have no time gate; event projection retains its three-day
+event-first-seen guard. Active canonical articles receive one cluster, including
+isolates; filtered URLs remain unassigned. Event-based memberships still overlap.
+Large clusters and high URL-keyword scores do **not** demonstrate story accuracy:
+URL-based models use related evidence for features and evaluation, making those
+scores circular. Independent pair/cluster labels are needed for precision,
+recall, B³, CEAF-e and retrieval recall; this experiment does not fabricate them.
+
+Outputs reuse the baseline inspection sheets and add `comparison.csv`,
+`article_pairs.parquet` (candidate union with channel scores), feature/candidate
+audits and each article run's `canonical_clusters.parquet`. For article runs,
+`event_clusters.parquet` is an overlapping event/cluster relation, not an event
+partition. Singleton-only URL counts and canonical size quantiles help compare
+fragmentation without counting wire copies as independent support.
+
+For a reusable preparation checkpoint, add `--prepare-only`. Continue into a new
+output directory with `--prepared results/prepared-input`; the input settings are
+checked and provenance is inherited. Intermediate data and reports stay out of
+Git. Use `--help` for resource bounds; do not interpret an aborted run as a result.
 
 ## Outputs and validation
 

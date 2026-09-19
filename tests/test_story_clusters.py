@@ -126,6 +126,27 @@ def test_count_projection_does_not_overflow_uint8(tmp_path: Path) -> None:
     assert pairs["jaccard"].to_list() == [1.0]
 
 
+def test_support_one_preserves_pairs_without_changing_incidence(tmp_path: Path) -> None:
+    rows = [
+        mention("https://a.example/x", 1),
+        mention("https://a.example/x", 2),
+        mention("https://b.example/y", 3),
+    ]
+    web, articles, _ = prepare_articles(load(tmp_path, rows), Settings())
+    events, incidence, baseline, _ = project(web, articles, Settings())
+    relaxed_events, relaxed_incidence, relaxed, _ = project(
+        web, articles, replace(Settings(), min_shared_articles=1)
+    )
+    assert events.equals(relaxed_events)
+    assert incidence.equals(relaxed_incidence)
+    assert baseline.is_empty()
+    assert relaxed["count"].to_list() == [1]
+    for method in ["components", "louvain", "leiden"]:
+        membership, edges = communities(events, relaxed, "jaccard", 0.1, method, 2026)
+        assert edges == 1
+        assert membership["cluster"].n_unique() == 2
+
+
 def test_roundups_confidence_time_and_memory_guards(tmp_path: Path) -> None:
     rows = [
         mention(

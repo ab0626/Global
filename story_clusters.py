@@ -132,6 +132,7 @@ class Settings:
     recurring_days: float = 2
     event_gap_days: float = 3
     min_fingerprint_events: int = 2
+    min_shared_articles: int = 2
     max_pair_contributions: int = 50_000_000
     seed: int = 2026
 
@@ -408,7 +409,7 @@ def project(
     common = sparse.triu(matrix.T @ matrix, k=1, format="coo")
     times = events["event_time"].to_numpy()
     counts = np.asarray(matrix.sum(axis=0)).ravel()
-    mask = (common.data >= 2) & (
+    mask = (common.data >= settings.min_shared_articles) & (
         np.abs(times[common.row] - times[common.col]) <= settings.event_gap_days * 86400
     )
     left, right, weights = common.row[mask], common.col[mask], common.data[mask]
@@ -445,14 +446,26 @@ def communities(
     threshold: float,
     method: str,
     seed: int,
+    resolution: float = 1.0,
 ) -> tuple[pl.DataFrame, int]:
+    if method not in {"components", "louvain", "leiden"}:
+        raise ValueError(f"Unknown community method: {method}")
     selected = pairs.filter(pl.col(metric) >= threshold)
     graph = ig.Graph(n=events.height, edges=selected.select("left", "right").iter_rows())
     ig.set_random_number_generator(random.Random(seed))
     if method == "components" or not graph.ecount():
         membership = graph.connected_components().membership
+    elif method == "louvain":
+        membership = graph.community_multilevel(
+            weights=selected[metric].to_list(), resolution=resolution
+        ).membership
     else:
-        membership = graph.community_multilevel(weights=selected[metric].to_list()).membership
+        membership = graph.community_leiden(
+            weights=selected[metric].to_list(),
+            objective_function="modularity",
+            resolution=resolution,
+            n_iterations=-1,
+        ).membership
     result = events.with_columns(pl.Series("cluster", membership, dtype=pl.Int64))
     return result, graph.ecount()
 
@@ -613,10 +626,38 @@ def evaluate(
     method: str,
     seed: int,
 ) -> tuple[dict, list[dict], pl.DataFrame]:
-    destination = output / name
-    destination.mkdir()
     membership, edge_count = communities(events, pairs, metric, threshold, method, seed)
     members = article_memberships(incidence, membership, articles)
+    return save_evaluation(
+        output,
+        name,
+        articles,
+        membership,
+        members,
+        labels,
+        metric,
+        threshold,
+        method,
+        seed,
+        edge_count,
+    )
+
+
+def save_evaluation(
+    output: Path,
+    name: str,
+    articles: pl.DataFrame,
+    membership: pl.DataFrame,
+    members: pl.DataFrame,
+    labels: pl.DataFrame,
+    metric: str,
+    threshold: float,
+    method: str,
+    seed: int,
+    edge_count: int,
+) -> tuple[dict, list[dict], pl.DataFrame]:
+    destination = output / name
+    destination.mkdir()
     sizes = cluster_sizes(members, membership)
     validation, distribution = keyword_validation(articles, members, sizes)
     assigned = members["article_id"].n_unique()
@@ -645,6 +686,15 @@ def evaluate(
         "best_clusters_all_distinct": len(valid_ids) == 4 and len(set(valid_ids)) == 4,
         "clusters_matching_all_four_keyword_sets": category_counts.filter(pl.col("n") == 4).height,
         "single_event_clusters": sizes.filter(pl.col("events") == 1).height,
+        "single_canonical_article_clusters": sizes.filter(pl.col("canonical_articles") == 1).height,
+        "singleton_only_assigned_urls": assigned
+        - members.join(
+            sizes.filter(pl.col("canonical_articles") > 1).select("cluster"), on="cluster"
+        )["article_id"].n_unique(),
+        "canonical_article_count_quantiles": {
+            str(q): sizes["canonical_articles"].quantile(q)
+            for q in [0, 0.25, 0.5, 0.75, 0.9, 0.99, 1]
+        },
         "article_count_quantiles": {
             str(q): sizes["articles"].quantile(q) for q in [0, 0.25, 0.5, 0.75, 0.9, 0.99, 1]
         },
@@ -752,6 +802,12 @@ def main() -> None:
     parser.add_argument("--end-date", default="20190317", help="Inclusive UTC day")
     parser.add_argument("--allow-partial", action="store_true")
     parser.add_argument("--output", type=Path, required=True, help="Must not already exist")
+    parser.add_argument(
+        "--methods",
+        nargs="+",
+        choices=["components", "louvain", "leiden"],
+        default=["components", "louvain"],
+    )
     defaults = Settings()
     for field in asdict(defaults):
         value = asdict(defaults)[field]
@@ -815,7 +871,7 @@ def main() -> None:
     fig, axis = plt.subplots(figsize=(10, 6), layout="constrained")
     for metric, thresholds in [("jaccard", [0.05, 0.1, 0.2]), ("count", [2, 3, 5])]:
         for threshold in thresholds:
-            for method in ["components", "louvain"]:
+            for method in args.methods:
                 name = f"{metric}-{threshold}-{method}"
                 print(f"Evaluating {name}...", flush=True)
                 summary, validation, sizes = evaluate(

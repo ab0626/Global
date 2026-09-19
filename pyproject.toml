@@ -27,7 +27,7 @@ target-version = "py310"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ty.src]
-include = ["story_clusters.py", "tests"]
+include = ["story_clusters.py", "clustering_experiment.py", "tests"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
