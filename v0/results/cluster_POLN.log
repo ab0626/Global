@@ -1,0 +1,131 @@
+30482 articles x 48777 entity terms (types=POLN, max_df=0.5)
+threshold 0.3: 676812 edges
+threshold 0.4: 279223 edges
+threshold 0.5: 125644 edges
+
+=== event cluster by config (purity = share of cluster URLs mentioning notre-dame; recall = share of all notre-dame URLs captured) ===
+config                 clusters   size  purity  recall  countries / languages
+t=0.3 components           2339  26125    0.07    0.92  {'BR': 10183, 'DE': 3978, 'FR': 3708, 'JP': 2472, 'US': 5784} / {'por': 10181, 'eng': 6263, 'deu': 3973, 'fra': 3705, 'jpn': 1819, 'spa': 104, 'ara': 76, 'zho': 3, 'tur': 1}
+t=0.3 leiden r=0.5         2427   3090    0.51    0.77  {'BR': 541, 'DE': 200, 'FR': 1753, 'JP': 110, 'US': 486} / {'fra': 1752, 'por': 541, 'eng': 473, 'deu': 199, 'jpn': 83, 'spa': 27, 'ara': 15}
+t=0.3 leiden r=1.0         2436   2235    0.51    0.55  {'BR': 503, 'DE': 158, 'FR': 1451, 'JP': 25, 'US': 98} / {'fra': 1450, 'por': 503, 'deu': 158, 'eng': 95, 'spa': 15, 'jpn': 13, 'ara': 1}
+t=0.3 leiden r=2.0         2475    778    0.75    0.28  {'BR': 442, 'DE': 78, 'FR': 163, 'JP': 18, 'US': 77} / {'por': 442, 'fra': 163, 'deu': 78, 'eng': 73, 'spa': 12, 'jpn': 9, 'ara': 1}
+t=0.4 components           5252  20671    0.08    0.77  {'BR': 9007, 'DE': 1875, 'FR': 3341, 'JP': 2114, 'US': 4334} / {'por': 9006, 'eng': 4747, 'fra': 3338, 'deu': 1871, 'jpn': 1543, 'spa': 90, 'ara': 72, 'zho': 3, 'tur': 1}
+t=0.4 leiden r=0.5         5330   2016    0.50    0.48  {'BR': 497, 'DE': 80, 'FR': 1337, 'JP': 15, 'US': 87} / {'fra': 1336, 'por': 497, 'deu': 80, 'eng': 75, 'spa': 15, 'jpn': 12, 'ara': 1}
+t=0.4 leiden r=1.0         5372   1308    0.57    0.36  {'BR': 459, 'DE': 66, 'FR': 706, 'JP': 13, 'US': 64} / {'fra': 705, 'por': 459, 'deu': 66, 'eng': 52, 'spa': 15, 'jpn': 10, 'ara': 1}
+t=0.4 leiden r=2.0         5413    768    0.59    0.22  {'BR': 321, 'DE': 24, 'FR': 376, 'JP': 12, 'US': 35} / {'fra': 375, 'por': 321, 'eng': 27, 'deu': 24, 'spa': 11, 'jpn': 9, 'ara': 1}
+t=0.5 components           9501  13294    0.09    0.57  {'BR': 6579, 'DE': 733, 'FR': 2412, 'JP': 1322, 'US': 2248} / {'por': 6578, 'eng': 2482, 'fra': 2411, 'jpn': 977, 'deu': 731, 'spa': 61, 'ara': 51, 'zho': 2, 'tur': 1}
+t=0.5 leiden r=0.5         9595   1141    0.56    0.31  {'BR': 437, 'DE': 24, 'FR': 619, 'JP': 8, 'US': 53} / {'fra': 619, 'por': 437, 'eng': 40, 'deu': 24, 'spa': 14, 'jpn': 6, 'ara': 1}
+t=0.5 leiden r=1.0         9619    852    0.61    0.25  {'BR': 401, 'DE': 23, 'FR': 370, 'JP': 7, 'US': 51} / {'por': 401, 'fra': 370, 'eng': 38, 'deu': 23, 'spa': 14, 'jpn': 5, 'ara': 1}
+t=0.5 leiden r=2.0         9652    521    0.64    0.16  {'BR': 266, 'DE': 9, 'FR': 220, 'JP': 5, 'US': 21} / {'por': 266, 'fra': 220, 'eng': 12, 'spa': 10, 'deu': 9, 'jpn': 3, 'ara': 1}
+
+=== detail for t=0.3 leiden r=0.5: event cluster 5 ===
+top terms: L:France, L:Paris, France (General), France, L:French, P:Notre Dame, N:Notre Dame, N:Emmanuel Macron, N:Monday April, O:Philippe, N:Notre Dame Cathedral, P:Our Lady, P:Victor Hugo, N:Her East
+
+-- where each country's notre-dame URLs landed (cluster: count, top terms) --
+  US:
+    cluster 5:  374  size  3090  L:France, L:Paris, France (General), France, L:French, P:Notre Dame, N:Notre Dame, N:Emmanuel Macron, N:Monday April, O:Philippe
+    cluster 0:   16  size  2772  O:Associated Press, L:Washington, Washington, United States, L:American, L:Russian, L:Russia, O:Cnn, P:Donald Trump, L:Israel
+    cluster 2:   12  size  4187  L:Japan, L:United States, O:United States, L:China, L:Tokyo, Tokyo, Japan, N:United States, L:Thailand, L:Chinese
+    cluster 4:    2  size  1430  L:United Kingdom, N:United Kingdom, L:Italy, L:London, London, City Of, United Kingdom, O:Boeing, L:Spain, L:Italian, L:Spanish
+  FR:
+    cluster 5:  633  size  3090  L:France, L:Paris, France (General), France, L:French, P:Notre Dame, N:Notre Dame, N:Emmanuel Macron, N:Monday April, O:Philippe
+    cluster 33:   52  size  1035  L:Algerie, L:Indonesia, L:France, L:French, N:Lady Them, L:Widodo, Jawa Tengah, Indonesia, L:Jakarta, Jakarta Raya, Indonesia, L:Indonesian
+    cluster 2:   18  size  4187  L:Japan, L:United States, O:United States, L:China, L:Tokyo, Tokyo, Japan, N:United States, L:Thailand, L:Chinese
+    cluster 4:   11  size  1430  L:United Kingdom, N:United Kingdom, L:Italy, L:London, London, City Of, United Kingdom, O:Boeing, L:Spain, L:Italian, L:Spanish
+  DE:
+    cluster 5:  126  size  3090  L:France, L:Paris, France (General), France, L:French, P:Notre Dame, N:Notre Dame, N:Emmanuel Macron, N:Monday April, O:Philippe
+    cluster 10:   55  size    89  L:French, N:Parisian Cathedral, O:Tuesday Morning, N:Monday Night, N:Tuesday Morning, N:French Capital, L:France, N:Parisian Firefighter
+    cluster 6:   40  size  2118  L:Germany, L:German, L:Berlin, Berlin, Germany, L:Munich, Bayern, Germany, N:Dpa News Channel, L:Hanover, Niedersachsen, Germany, L:Saxony, Sachsen, Germany, L:Karlsruhe, Baden-WüBerg, Germany
+    cluster 9:   32  size   139  N:Regional Trains, N:German Web, L:German, N:Long Distance Service, N:John Percent, L:Lugde, Nordrhein-Westfalen, Germany, N:German Press-Agency, N:Included Delays
+  JP:
+    cluster 5:   11  size  3090  L:France, L:Paris, France (General), France, L:French, P:Notre Dame, N:Notre Dame, N:Emmanuel Macron, N:Monday April, O:Philippe
+    cluster 2:    1  size  4187  L:Japan, L:United States, O:United States, L:China, L:Tokyo, Tokyo, Japan, N:United States, L:Thailand, L:Chinese
+  BR:
+    cluster 5:  447  size  3090  L:France, L:Paris, France (General), France, L:French, P:Notre Dame, N:Notre Dame, N:Emmanuel Macron, N:Monday April, O:Philippe
+    cluster 37:   13  size  1374  O:Reuters, O:Petrobras, L:Centro, Minas Gerais, Brazil, P:Felipe Francischini, L:London, London, City Of, United Kingdom, L:Brazil, N:Reuters Reuters This, P:Marcelo Freitas
+    cluster 7:    8  size  6227  L:Brazil, L:Sao Paulo, SãPaulo, Brazil, L:Brazilian, N:Sao Paulo, N:Military Police, N:Police Civilian, N:States Attached, L:Muzema, Estado Do Rio, Brazil
+    cluster 0:    5  size  2772  O:Associated Press, L:Washington, Washington, United States, L:American, L:Russian, L:Russia, O:Cnn, P:Donald Trump, L:Israel
+
+-- possible contamination: in cluster, URL does not mention notre-dame (up to 30) --
+  [lefigaro.fr] http://www.lefigaro.fr/conjoncture/emploi-des-jeunes-une-priorite-de-l-executif-20190414
+  [lefigaro.fr] http://www.lefigaro.fr/conjoncture/florence-parly-s-engage-aux-cotes-des-industriels-20190414
+  [welt.de] oline_nt/schlaglichter_nt/article191923957/1-5-in-Lille-Tuchel-mit-PSG-immer-noch-nicht-Meister.html
+  [zeit.de] ://www.zeit.de/news/2019-04/14/1-5-in-lille-tuchel-mit-psg-immer-noch-nicht-meister-190415-99-824799
+  [mainichi.jp] http://mainichi.jp/articles/20190415/ckp/00m/100/001000c
+  [la1ere.francetvinfo.fr] /la1ere.francetvinfo.fr/nouvellecaledonie/championnats-caledonie-va-tuhaa-pae-roi-du-v12-700598.html
+  [france3-regions.francetvinfo.fr] rance/paris/psg-humilie-lille-perd-deux-joueurs-blesses-n-est-pas-sacre-champion-france-1655476.html
+  [la1ere.francetvinfo.fr] ahiti/polynesie-francaise/grace-shing-soy-representera-polynesie-au-miss-ink-france-2019-700590.html
+  [la1ere.francetvinfo.fr] fo.fr/polynesie/tahiti/polynesie-francaise/the-voice-mano-salmon-ne-passe-pas-epreuve-ko-700588.html
+  [apnews.com] https://apnews.com/60d4d05e86744f7ca60b60d0524b5c71
+  [nbcnews.com] ews/world/steve-bannon-u-s-ultra-conservatives-take-aim-pope-francis-n991411?cid=public-rss_20190415
+  [nbcnews.com] red-pope-benedict-blames-sexual-revolution-church-laws-abuse-scandal-n993416?cid=public-rss_20190415
+  [evene.lefigaro.fr] http://evene.lefigaro.fr/celebre/biographie/leonard-de-vinci-13.php
+  [20minutes.fr] https://www.20minutes.fr/societe/2496727-20190414-meteo-grenoble-previsions-du-lundi-15-avril-2019
+  [20minutes.fr] https://www.20minutes.fr/toulouse/2496815-20190415-meteo-toulouse-previsions-du-lundi-15-avril-2019
+  [20minutes.fr] https://www.20minutes.fr/paris/2496715-20190414-meteo-paris-previsions-du-lundi-15-avril-2019
+  [20minutes.fr] ://www.20minutes.fr/montpellier/2496755-20190414-meteo-montpellier-previsions-du-lundi-15-avril-2019
+  [20minutes.fr] https://www.20minutes.fr/rennes/2496895-20190415-meteo-rennes-previsions-du-lundi-15-avril-2019
+  [nbcnews.com] /first-picture-black-hole-made-katie-bouman-overnight-celebrity-then-n994081?cid=public-rss_20190415
+  [nbcnews.com] speech-hits-youtube-livestreams-house-hearing-rise-white-nationalism-n992386?cid=public-rss_20190415
+  [20minutes.fr] https://www.20minutes.fr/lyon/2496891-20190415-meteo-lyon-previsions-du-lundi-15-avril-2019
+  [la1ere.francetvinfo.fr] vinfo.fr/nouvellecaledonie/province-nord/ouegoa/ouegoa-conquete-du-tourisme-cinq-etoiles-700666.html
+  [france3-regions.francetvinfo.fr] anie/previsions-meteo-semaine-temps-plutot-clement-temperatures-qui-depassent-20-degres-1655394.html
+  [france3-regions.francetvinfo.fr] .fr/auvergne-rhone-alpes/ain/vide-grenier-solidaire-villars-dombes-apres-incendie-ecole-1655422.html
+  [jiji.com] https://www.jiji.com/jc/article?k=20190415038497a&g=afp
+  [washingtonpost.com] rtainment/2019/04/12/marques-brownlee-is-one-biggest-voices-consumer-tech-even-will-smith-knows-him/
+  [lefigaro.fr] http://www.lefigaro.fr/societes/la-filiere-biomethane-redoute-l-extinction-pure-et-simple-20190415
+  [lefigaro.fr] http://www.lefigaro.fr/conso/elle-transforme-les-appareils-auditifs-pour-creer-l-echange-20190415
+  [lefigaro.fr] http://www.lefigaro.fr/societes/le-plan-de-oui-sncf-pour-passer-a-la-tres-grande-vitesse-20190415
+  [liberation.fr] 2019/04/15/changement-climatique-les-prochaines-cop-doivent-integrer-la-question-humanitaire_1721013
+
+-- first article per country in cluster (hours after fire start, source, url) --
+  FR -17h [lefigaro.fr] http://www.lefigaro.fr/conjoncture/emploi-des-jeunes-une-priorite-de-l-executif-20190414
+  DE -17h [welt.de] chlaglichter_nt/article191923957/1-5-in-Lille-Tuchel-mit-PSG-immer-noch-nicht-Meister.html
+  JP -16h [mainichi.jp] http://mainichi.jp/articles/20190415/ckp/00m/100/001000c
+  US -16h [apnews.com] https://apnews.com/60d4d05e86744f7ca60b60d0524b5c71
+  BR -6h [terra.com.br] /publicis-paga-us-44-bi-por-agencia-de-dados,8f8b2435f2468d087ae0f8bd057710f7ftisee6a.html
+
+-- cluster articles per country per hour after fire start (first 36h) --
+shape: (36, 6)
+┌─────────────┬─────┬─────┬─────┬─────┬─────┐
+│ hours_after ┆ US  ┆ FR  ┆ DE  ┆ JP  ┆ BR  │
+│ ---         ┆ --- ┆ --- ┆ --- ┆ --- ┆ --- │
+│ i32         ┆ u32 ┆ u32 ┆ u32 ┆ u32 ┆ u32 │
+╞═════════════╪═════╪═════╪═════╪═════╪═════╡
+│ 0           ┆ 4   ┆ 22  ┆ 1   ┆ 0   ┆ 1   │
+│ 1           ┆ 13  ┆ 44  ┆ 6   ┆ 0   ┆ 16  │
+│ 2           ┆ 18  ┆ 47  ┆ 5   ┆ 3   ┆ 22  │
+│ 3           ┆ 11  ┆ 48  ┆ 2   ┆ 1   ┆ 22  │
+│ 4           ┆ 18  ┆ 47  ┆ 8   ┆ 0   ┆ 27  │
+│ 5           ┆ 17  ┆ 40  ┆ 5   ┆ 3   ┆ 27  │
+│ 6           ┆ 21  ┆ 17  ┆ 5   ┆ 0   ┆ 28  │
+│ 7           ┆ 11  ┆ 20  ┆ 7   ┆ 0   ┆ 14  │
+│ 8           ┆ 17  ┆ 1   ┆ 1   ┆ 2   ┆ 18  │
+│ 9           ┆ 13  ┆ 6   ┆ 2   ┆ 3   ┆ 18  │
+│ 10          ┆ 10  ┆ 12  ┆ 9   ┆ 5   ┆ 7   │
+│ 11          ┆ 7   ┆ 1   ┆ 4   ┆ 2   ┆ 3   │
+│ 12          ┆ 5   ┆ 12  ┆ 1   ┆ 3   ┆ 2   │
+│ 13          ┆ 5   ┆ 28  ┆ 3   ┆ 4   ┆ 3   │
+│ 14          ┆ 5   ┆ 16  ┆ 2   ┆ 4   ┆ 2   │
+│ 15          ┆ 3   ┆ 17  ┆ 8   ┆ 4   ┆ 3   │
+│ 16          ┆ 2   ┆ 21  ┆ 6   ┆ 3   ┆ 3   │
+│ 17          ┆ 3   ┆ 45  ┆ 7   ┆ 1   ┆ 5   │
+│ 18          ┆ 6   ┆ 41  ┆ 4   ┆ 4   ┆ 6   │
+│ 19          ┆ 10  ┆ 35  ┆ 8   ┆ 4   ┆ 26  │
+│ 20          ┆ 10  ┆ 45  ┆ 7   ┆ 4   ┆ 22  │
+│ 21          ┆ 12  ┆ 15  ┆ 4   ┆ 4   ┆ 23  │
+│ 22          ┆ 15  ┆ 53  ┆ 3   ┆ 5   ┆ 12  │
+│ 23          ┆ 10  ┆ 42  ┆ 10  ┆ 3   ┆ 19  │
+│ 24          ┆ 17  ┆ 36  ┆ 5   ┆ 2   ┆ 20  │
+│ 25          ┆ 28  ┆ 44  ┆ 7   ┆ 1   ┆ 8   │
+│ 26          ┆ 13  ┆ 49  ┆ 3   ┆ 2   ┆ 15  │
+│ 27          ┆ 14  ┆ 41  ┆ 5   ┆ 0   ┆ 17  │
+│ 28          ┆ 10  ┆ 37  ┆ 1   ┆ 6   ┆ 13  │
+│ 29          ┆ 6   ┆ 17  ┆ 3   ┆ 1   ┆ 9   │
+│ 30          ┆ 10  ┆ 10  ┆ 1   ┆ 3   ┆ 8   │
+│ 31          ┆ 4   ┆ 3   ┆ 2   ┆ 0   ┆ 12  │
+│ 32          ┆ 22  ┆ 5   ┆ 0   ┆ 1   ┆ 1   │
+│ 33          ┆ 0   ┆ 3   ┆ 2   ┆ 4   ┆ 3   │
+│ 34          ┆ 3   ┆ 0   ┆ 2   ┆ 3   ┆ 1   │
+│ 35          ┆ 3   ┆ 2   ┆ 1   ┆ 1   ┆ 0   │
+└─────────────┴─────┴─────┴─────┴─────┴─────┘

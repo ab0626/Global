@@ -1,8 +1,8 @@
 [project]
-name = "gdelt-story-clusters"
+name = "global"
 version = "0.1.0"
-description = "A metadata-only GDELT story clustering experiment"
-requires-python = ">=3.10,<3.14"
+description = "GDELT story clustering experiments (v0 title/entity embeddings and metadata-only Mentions graphs)"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "polars==1.31.0",
     "igraph==0.11.9",
@@ -12,6 +12,9 @@ dependencies = [
     "boto3==1.38.46",
     "fastapi>=0.141.1",
     "uvicorn>=0.52.4",
+    "scikit-learn>=1.5",
+    "sentence-transformers>=3.0",
+    "torch>=2.4",
 ]
 
 [dependency-groups]
@@ -26,9 +29,18 @@ dev = [
 package = false
 exclude-newer = "2026-09-12T00:00:00Z"
 
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+extend-exclude = ["v0"]
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

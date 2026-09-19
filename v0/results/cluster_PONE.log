@@ -1,0 +1,133 @@
+30482 articles x 51941 entity terms (types=PONE, max_df=0.5)
+threshold 0.3: 384641 edges
+threshold 0.4: 188755 edges
+threshold 0.5: 97538 edges
+
+=== event cluster by config (purity = share of cluster URLs mentioning notre-dame; recall = share of all notre-dame URLs captured) ===
+config                 clusters   size  purity  recall  countries / languages
+t=0.3 components           3972  23266    0.07    0.83  {'BR': 9793, 'DE': 3057, 'FR': 3283, 'JP': 2110, 'US': 5023} / {'por': 9791, 'eng': 5389, 'fra': 3281, 'deu': 3054, 'jpn': 1586, 'spa': 95, 'ara': 66, 'zho': 3, 'tur': 1}
+t=0.3 leiden r=0.5         4076   2852    0.26    0.35  {'BR': 205, 'DE': 119, 'FR': 2424, 'JP': 24, 'US': 80} / {'fra': 2424, 'por': 205, 'deu': 119, 'eng': 83, 'jpn': 14, 'ara': 5, 'spa': 2}
+t=0.3 leiden r=1.0         4089   2253    0.28    0.30  {'BR': 129, 'DE': 35, 'FR': 2030, 'JP': 16, 'US': 43} / {'fra': 2030, 'por': 129, 'eng': 43, 'deu': 35, 'jpn': 14, 'ara': 1, 'spa': 1}
+t=0.3 leiden r=2.0         4116   1220    0.33    0.19  {'BR': 15, 'DE': 17, 'FR': 1169, 'JP': 1, 'US': 18} / {'fra': 1169, 'eng': 18, 'deu': 17, 'por': 15, 'spa': 1}
+t=0.4 components           7245  16925    0.08    0.67  {'BR': 8293, 'DE': 1162, 'FR': 2771, 'JP': 1513, 'US': 3186} / {'por': 8291, 'eng': 3379, 'fra': 2770, 'jpn': 1188, 'deu': 1161, 'spa': 78, 'ara': 57, 'zho': 1}
+t=0.4 leiden r=0.5         7337   1550    0.26    0.19  {'BR': 41, 'DE': 45, 'FR': 1409, 'JP': 9, 'US': 46} / {'fra': 1409, 'eng': 46, 'deu': 45, 'por': 41, 'jpn': 7, 'ara': 1, 'spa': 1}
+t=0.4 leiden r=1.0         7357   1182    0.28    0.16  {'BR': 33, 'DE': 11, 'FR': 1115, 'US': 23} / {'fra': 1115, 'por': 33, 'eng': 22, 'deu': 11, 'ara': 1}
+t=0.4 leiden r=2.0         7395    410    0.66    0.13  {'DE': 3, 'FR': 6, 'JP': 84, 'US': 317} / {'eng': 294, 'jpn': 80, 'spa': 14, 'ara': 14, 'fra': 6, 'deu': 2}
+t=0.5 components          11399   9840    0.09    0.41  {'BR': 5677, 'DE': 159, 'FR': 1726, 'JP': 872, 'US': 1406} / {'por': 5675, 'fra': 1726, 'eng': 1459, 'jpn': 728, 'deu': 158, 'spa': 51, 'ara': 42, 'zho': 1}
+t=0.5 leiden r=0.5        11465    773    0.31    0.11  {'BR': 43, 'DE': 13, 'FR': 701, 'JP': 4, 'US': 12} / {'fra': 701, 'por': 43, 'eng': 14, 'deu': 13, 'jpn': 1, 'spa': 1}
+t=0.5 leiden r=1.0        11494    384    0.49    0.09  {'BR': 2, 'DE': 1, 'FR': 1, 'JP': 76, 'US': 304} / {'eng': 285, 'jpn': 74, 'ara': 12, 'spa': 10, 'por': 2, 'fra': 1}
+t=0.5 leiden r=2.0        11532    282    0.64    0.09  {'BR': 2, 'DE': 1, 'FR': 1, 'JP': 71, 'US': 207} / {'eng': 186, 'jpn': 71, 'ara': 12, 'spa': 10, 'por': 2, 'fra': 1}
+
+=== detail for t=0.3 leiden r=0.5: event cluster 7 ===
+top terms: N:Emmanuel Macron, N:Monday April, O:Philippe, N:Her East, P:Our Lady, N:Tuesday April, P:Edward Philippe, N:Notre-Dame Betting, N:Thank You, N:Wednesday April, N:Prime Minister, N:Edward Philippe
+
+-- where each country's notre-dame URLs landed (cluster: count, top terms) --
+  US:
+    cluster 73:  320  size   592  P:Notre Dame, N:Notre Dame, N:Notre Dame Cathedral, O:Youtube, O:Twitter, O:Cnn, N:President Emmanuel Macron, O:Associated Press
+    cluster 0:   17  size  2308  O:Cnn, O:Facebook, P:Donald Trump, O:Twitter, O:White House, P:Los Angeles, N:White House, N:President Trump
+    cluster 7:   13  size  2852  N:Emmanuel Macron, N:Monday April, O:Philippe, N:Her East, P:Our Lady, N:Tuesday April, P:Edward Philippe, N:Notre-Dame Betting
+    cluster 3:   12  size  1626  O:United States, N:United States, N:Business Wire, N:New York, N:Saudi Arabia, N:North Korea, O:Nasdaq, P:Donald Trump
+  FR:
+    cluster 7:  633  size  2852  N:Emmanuel Macron, N:Monday April, O:Philippe, N:Her East, P:Our Lady, N:Tuesday April, P:Edward Philippe, N:Notre-Dame Betting
+    cluster 3:   18  size  1626  O:United States, N:United States, N:Business Wire, N:New York, N:Saudi Arabia, N:North Korea, O:Nasdaq, P:Donald Trump
+    cluster 6:   12  size  1936  N:States Attached, N:Goggle Box, N:United Kingdom, N:Union European, O:Boeing, O:Union European, N:Kingdom Attached, N:Web Site
+    cluster 0:    8  size  2308  O:Cnn, O:Facebook, P:Donald Trump, O:Twitter, O:White House, P:Los Angeles, N:White House, N:President Trump
+  DE:
+    cluster 20:  111  size   667  N:Dpa News Channel, N:Monday Night, O:Parisian, N:Federal Government, N:Good Friday, N:Parisian Cathedral, O:German Weather Service, O:Administrative Court
+    cluster 11:   26  size   422  P:Victor Hugo, N:Victor Hugo, O:A Museum, N:Museum National, O:Museum National, N:Their Cathedral, N:Natural History, N:One Fire
+    cluster 7:   15  size  2852  N:Emmanuel Macron, N:Monday April, O:Philippe, N:Her East, P:Our Lady, N:Tuesday April, P:Edward Philippe, N:Notre-Dame Betting
+    cluster 21:   12  size    80  N:Regional Trains, N:German Web, N:John Percent, N:Included Delays, N:Country Her Payments, N:German Press-Agency, N:Previous Year, N:Development Companies
+  JP:
+    cluster 73:    7  size   592  P:Notre Dame, N:Notre Dame, N:Notre Dame Cathedral, O:Youtube, O:Twitter, O:Cnn, N:President Emmanuel Macron, O:Associated Press
+    cluster 2728:    1  size     2  O:French Council Of The Muslim Faith, E:838853187, E:838813343, E:838812547, E:838788269, N:French Council, N:French Muslims, E:838790164
+    cluster 2264:    1  size     2  P:Notre Dame, P:Pierre-Herve Grosjean, P:Olivier Lebib, P:Lech Kurek, P:Henrik Enderlein, N:Olivier Lebib, N:Pierre-Herve Grosjean, O:Jacques Delors Institute
+    cluster 249:    1  size   158  O:Olympics, N:Tokyo Olympics, N:South Korean, N:Climate Change, N:Games Olympic, N:Tokyo Olympics Paralympic Games, O:Asiana Airlines, N:Kumamoto Prefecture
+  BR:
+    cluster 11:  179  size   422  P:Victor Hugo, N:Victor Hugo, O:A Museum, N:Museum National, O:Museum National, N:Their Cathedral, N:Natural History, N:One Fire
+    cluster 7:   74  size  2852  N:Emmanuel Macron, N:Monday April, O:Philippe, N:Her East, P:Our Lady, N:Tuesday April, P:Edward Philippe, N:Notre-Dame Betting
+    cluster 10:   50  size  4321  N:Sao Paulo, N:Military Police, N:Police Civilian, N:Fire Station, N:Police Station, O:Young, N:Week Saint, O:Their Police
+    cluster 12:   49  size  1534  O:Reuters, P:Felipe Francischini, N:Reuters Reuters This, N:Reuters Size, N:States Attached, P:Marcelo Freitas, N:Rodrigo Mayan, N:Marcelo Freitas
+
+-- possible contamination: in cluster, URL does not mention notre-dame (up to 30) --
+  [lefigaro.fr] http://www.lefigaro.fr/conjoncture/emploi-des-jeunes-une-priorite-de-l-executif-20190414
+  [lemonde.fr] sange-a-tente-de-creer-un-centre-d-espionnage-dans-l-ambassade-selon-l-equateur_5450140_4408996.html
+  [lemonde.fr] gislatives-en-finlande-les-sociaux-democrates-et-l-extreme-droite-au-coude-a-coude_5450118_3210.html
+  [uol.com.br] ttps://www.bol.uol.com.br/noticias/2019/04/14/radicalismo-politico-no-brasil-supera-media-global.htm
+  [uol.com.br] ol.uol.com.br/noticias/2019/04/14/bomba-da-ii-guerra-mundial-e-detonada-no-rio-meno-em-frankfurt.htm
+  [latimes.com] https://www.latimes.com/world/la-fg-germany-world-war-ii-bomb-20190414-story.html
+  [n-tv.de] https://www.n-tv.de/regionales/bayern/Mehr-Auslaender-werden-Bayern-article20968126.html
+  [la1ere.francetvinfo.fr] /la1ere.francetvinfo.fr/nouvellecaledonie/championnats-caledonie-va-tuhaa-pae-roi-du-v12-700598.html
+  [france3-regions.francetvinfo.fr] rance/paris/psg-humilie-lille-perd-deux-joueurs-blesses-n-est-pas-sacre-champion-france-1655476.html
+  [france3-regions.francetvinfo.fr] o.fr/paris-ile-de-france/paris/paris-explosion-ravage-appartement-du-18e-arrondissement-1655478.html
+  [la1ere.francetvinfo.fr] ahiti/polynesie-francaise/grace-shing-soy-representera-polynesie-au-miss-ink-france-2019-700590.html
+  [la1ere.francetvinfo.fr] fo.fr/polynesie/tahiti/polynesie-francaise/the-voice-mano-salmon-ne-passe-pas-epreuve-ko-700588.html
+  [uol.com.br] m.br/ultimas-noticias/efe/2019/04/14/maduro-completa-6-anos-no-poder-e-destaca-batalha-e-vitoria.htm
+  [la1ere.francetvinfo.fr] https://la1ere.francetvinfo.fr/nouvellecaledonie/provinciales-c-est-parti-depots-listes-700638.html
+  [nbcnews.com] toryline/smart-facts/what-eye-floater-symptoms-causes-treatment-more-n983886?cid=public-rss_20190415
+  [20minutes.fr] https://www.20minutes.fr/monde/2496955-20190415-finlande-sociaux-democrates-signent-retour-pouvoir
+  [nbcnews.com] umuamua-interstellar-object-may-have-simple-explanation-after-all-ncna985466?cid=public-rss_20190415
+  [nbcnews.com] ach/science/first-ever-photo-black-hole-may-be-coming-within-days-ncna990716?cid=public-rss_20190415
+  [20minutes.fr] https://www.20minutes.fr/societe/2496727-20190414-meteo-grenoble-previsions-du-lundi-15-avril-2019
+  [20minutes.fr] https://www.20minutes.fr/toulouse/2496815-20190415-meteo-toulouse-previsions-du-lundi-15-avril-2019
+  [20minutes.fr] https://www.20minutes.fr/paris/2496715-20190414-meteo-paris-previsions-du-lundi-15-avril-2019
+  [20minutes.fr] ://www.20minutes.fr/montpellier/2496755-20190414-meteo-montpellier-previsions-du-lundi-15-avril-2019
+  [globo.com] https://oglobo.globo.com/opiniao/nelson-pereira-dos-santos-nos-23596249
+  [globo.com] https://oglobo.globo.com/opiniao/memorias-do-diluvio-no-rio-23594962
+  [20minutes.fr] https://www.20minutes.fr/rennes/2496895-20190415-meteo-rennes-previsions-du-lundi-15-avril-2019
+  [20minutes.fr] https://www.20minutes.fr/lyon/2496891-20190415-meteo-lyon-previsions-du-lundi-15-avril-2019
+  [nikkei.com] https://www.nikkei.com/article/DGXMZO43730520V10C19A4CN0000/?n_cid=TPRN0003
+  [20minutes.fr] s.fr/societe/2496963-20190415-discrimination-defenseur-droits-demande-inspection-commissariats-paris
+  [france3-regions.francetvinfo.fr] anie/previsions-meteo-semaine-temps-plutot-clement-temperatures-qui-depassent-20-degres-1655394.html
+  [france3-regions.francetvinfo.fr] .fr/auvergne-rhone-alpes/ain/vide-grenier-solidaire-villars-dombes-apres-incendie-ecole-1655422.html
+
+-- first article per country in cluster (hours after fire start, source, url) --
+  FR -17h [lefigaro.fr] http://www.lefigaro.fr/conjoncture/emploi-des-jeunes-une-priorite-de-l-executif-20190414
+  BR -17h [uol.com.br] .bol.uol.com.br/noticias/2019/04/14/radicalismo-politico-no-brasil-supera-media-global.htm
+  US -16h [latimes.com] https://www.latimes.com/world/la-fg-germany-world-war-ii-bomb-20190414-story.html
+  DE -16h [n-tv.de] https://www.n-tv.de/regionales/bayern/Mehr-Auslaender-werden-Bayern-article20968126.html
+  JP -13h [nikkei.com] https://www.nikkei.com/article/DGXMZO43730520V10C19A4CN0000/?n_cid=TPRN0003
+
+-- cluster articles per country per hour after fire start (first 36h) --
+shape: (36, 6)
+┌─────────────┬─────┬─────┬─────┬─────┬─────┐
+│ hours_after ┆ US  ┆ FR  ┆ DE  ┆ JP  ┆ BR  │
+│ ---         ┆ --- ┆ --- ┆ --- ┆ --- ┆ --- │
+│ i32         ┆ u32 ┆ u32 ┆ u32 ┆ u32 ┆ u32 │
+╞═════════════╪═════╪═════╪═════╪═════╪═════╡
+│ 0           ┆ 1   ┆ 27  ┆ 2   ┆ 0   ┆ 1   │
+│ 1           ┆ 2   ┆ 76  ┆ 2   ┆ 0   ┆ 4   │
+│ 2           ┆ 3   ┆ 82  ┆ 0   ┆ 0   ┆ 3   │
+│ 3           ┆ 0   ┆ 58  ┆ 0   ┆ 0   ┆ 4   │
+│ 4           ┆ 1   ┆ 70  ┆ 0   ┆ 0   ┆ 6   │
+│ 5           ┆ 2   ┆ 63  ┆ 1   ┆ 0   ┆ 4   │
+│ 6           ┆ 3   ┆ 17  ┆ 0   ┆ 0   ┆ 4   │
+│ 7           ┆ 2   ┆ 21  ┆ 1   ┆ 0   ┆ 4   │
+│ 8           ┆ 3   ┆ 1   ┆ 3   ┆ 1   ┆ 2   │
+│ 9           ┆ 2   ┆ 5   ┆ 1   ┆ 0   ┆ 5   │
+│ 10          ┆ 2   ┆ 10  ┆ 2   ┆ 0   ┆ 3   │
+│ 11          ┆ 0   ┆ 1   ┆ 2   ┆ 0   ┆ 0   │
+│ 12          ┆ 0   ┆ 22  ┆ 2   ┆ 0   ┆ 0   │
+│ 13          ┆ 1   ┆ 38  ┆ 5   ┆ 0   ┆ 1   │
+│ 14          ┆ 1   ┆ 33  ┆ 1   ┆ 0   ┆ 0   │
+│ 15          ┆ 0   ┆ 47  ┆ 4   ┆ 0   ┆ 2   │
+│ 16          ┆ 1   ┆ 45  ┆ 3   ┆ 1   ┆ 1   │
+│ 17          ┆ 0   ┆ 70  ┆ 1   ┆ 0   ┆ 3   │
+│ 18          ┆ 1   ┆ 53  ┆ 5   ┆ 0   ┆ 6   │
+│ 19          ┆ 1   ┆ 62  ┆ 1   ┆ 0   ┆ 4   │
+│ 20          ┆ 1   ┆ 63  ┆ 7   ┆ 2   ┆ 5   │
+│ 21          ┆ 0   ┆ 27  ┆ 5   ┆ 0   ┆ 9   │
+│ 22          ┆ 0   ┆ 77  ┆ 1   ┆ 0   ┆ 9   │
+│ 23          ┆ 3   ┆ 52  ┆ 3   ┆ 0   ┆ 3   │
+│ 24          ┆ 2   ┆ 60  ┆ 6   ┆ 0   ┆ 6   │
+│ 25          ┆ 2   ┆ 47  ┆ 2   ┆ 0   ┆ 1   │
+│ 26          ┆ 2   ┆ 62  ┆ 1   ┆ 0   ┆ 4   │
+│ 27          ┆ 1   ┆ 50  ┆ 5   ┆ 0   ┆ 5   │
+│ 28          ┆ 1   ┆ 46  ┆ 2   ┆ 0   ┆ 6   │
+│ 29          ┆ 1   ┆ 23  ┆ 0   ┆ 1   ┆ 5   │
+│ 30          ┆ 2   ┆ 9   ┆ 0   ┆ 0   ┆ 2   │
+│ 31          ┆ 1   ┆ 3   ┆ 0   ┆ 1   ┆ 5   │
+│ 32          ┆ 1   ┆ 4   ┆ 0   ┆ 0   ┆ 2   │
+│ 33          ┆ 0   ┆ 2   ┆ 1   ┆ 0   ┆ 3   │
+│ 34          ┆ 0   ┆ 0   ┆ 1   ┆ 0   ┆ 4   │
+│ 35          ┆ 0   ┆ 1   ┆ 1   ┆ 0   ┆ 0   │
+└─────────────┴─────┴─────┴─────┴─────┴─────┘

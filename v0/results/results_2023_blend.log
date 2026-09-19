@@ -1,0 +1,172 @@
+13204 articles x 21359 entity terms (types=PONE, max_df=0.5)
+title_weight=0.5; similarity quantiles 50/90/99/99.9%: [0.048 0.131 0.247 0.413]
+threshold 0.3: 291291 edges
+threshold 0.4: 72479 edges
+threshold 0.5: 25418 edges
+threshold 0.6: 11877 edges
+threshold 0.7: 5421 edges
+
+=== event cluster by config (purity = share of cluster titles matching the event keywords; recall = share of all matching titles captured) ===
+config                 clusters   size  purity  recall  countries / languages
+t=0.3 components            614  12421    0.06    1.00  {'BR': 6790, 'DE': 1342, 'FR': 757, 'JP': 1048, 'US': 2484} / {'por': 6790, 'eng': 2663, 'deu': 1340, 'jpn': 848, 'fra': 745, 'spa': 31, 'zho': 3, 'tur': 1}
+t=0.3 leiden r=0.5          648    900    0.81    0.98  {'BR': 415, 'DE': 168, 'FR': 39, 'JP': 67, 'US': 211} / {'por': 415, 'eng': 224, 'deu': 167, 'jpn': 52, 'fra': 37, 'spa': 3, 'zho': 1, 'tur': 1}
+t=0.3 leiden r=1.0          657    839    0.86    0.97  {'BR': 380, 'DE': 159, 'FR': 33, 'JP': 64, 'US': 203} / {'por': 380, 'eng': 215, 'deu': 158, 'jpn': 50, 'fra': 31, 'spa': 3, 'zho': 1, 'tur': 1}
+t=0.3 leiden r=2.0          678    648    0.94    0.82  {'BR': 288, 'DE': 142, 'FR': 30, 'JP': 52, 'US': 136} / {'por': 288, 'deu': 141, 'eng': 141, 'jpn': 45, 'fra': 29, 'spa': 2, 'tur': 1, 'zho': 1}
+t=0.4 components           3112   8524    0.08    0.96  {'BR': 5133, 'DE': 822, 'FR': 447, 'JP': 840, 'US': 1282} / {'por': 5133, 'eng': 1382, 'deu': 820, 'jpn': 719, 'fra': 441, 'spa': 25, 'zho': 3, 'tur': 1}
+t=0.4 leiden r=0.5         3161    869    0.76    0.89  {'BR': 448, 'DE': 142, 'FR': 40, 'JP': 63, 'US': 176} / {'por': 448, 'eng': 183, 'deu': 141, 'jpn': 53, 'fra': 39, 'spa': 3, 'zho': 1, 'tur': 1}
+t=0.4 leiden r=1.0         3182    770    0.83    0.86  {'BR': 371, 'DE': 139, 'FR': 32, 'JP': 55, 'US': 173} / {'por': 371, 'eng': 180, 'deu': 138, 'jpn': 45, 'fra': 31, 'spa': 3, 'tur': 1, 'zho': 1}
+t=0.4 leiden r=2.0         3213    575    0.91    0.70  {'BR': 272, 'DE': 131, 'FR': 26, 'JP': 49, 'US': 97} / {'por': 272, 'deu': 130, 'eng': 103, 'jpn': 43, 'fra': 25, 'spa': 1, 'tur': 1}
+t=0.5 components           6458   3134    0.14    0.59  {'BR': 1944, 'DE': 169, 'FR': 126, 'JP': 455, 'US': 440} / {'por': 1944, 'eng': 478, 'jpn': 411, 'deu': 169, 'fra': 123, 'spa': 6, 'zho': 3}
+t=0.5 leiden r=0.5         6485    377    0.72    0.36  {'BR': 318, 'DE': 2, 'FR': 22, 'JP': 33, 'US': 2} / {'por': 318, 'jpn': 33, 'fra': 22, 'eng': 2, 'deu': 2}
+t=0.5 leiden r=1.0         6494    350    0.76    0.36  {'BR': 301, 'DE': 2, 'FR': 13, 'JP': 33, 'US': 1} / {'por': 301, 'jpn': 33, 'fra': 13, 'deu': 2, 'eng': 1}
+t=0.5 leiden r=2.0         6510    255    0.80    0.27  {'BR': 251, 'DE': 1, 'FR': 2, 'US': 1} / {'por': 251, 'fra': 2, 'eng': 1, 'deu': 1}
+t=0.6 components           9115    127    0.91    0.15  {'BR': 126, 'FR': 1} / {'por': 126, 'fra': 1}
+t=0.6 leiden r=0.5         9116     61    0.97    0.08  {'BR': 61} / {'por': 61}
+t=0.6 leiden r=1.0         9116     61    0.97    0.08  {'BR': 61} / {'por': 61}
+t=0.6 leiden r=2.0         9117     61    0.97    0.08  {'BR': 61} / {'por': 61}
+t=0.7 components          10888     37    0.24    0.01  {'DE': 37} / {'deu': 37}
+t=0.7 leiden r=0.5        10888     37    0.24    0.01  {'DE': 37} / {'deu': 37}
+t=0.7 leiden r=1.0        10888     37    0.24    0.01  {'DE': 37} / {'deu': 37}
+t=0.7 leiden r=2.0        10888     37    0.24    0.01  {'DE': 37} / {'deu': 37}
+
+=== detail for t=0.5 leiden r=1.0 title_weight=0.5: event cluster 21 ===
+top terms: O:Reuters, N:States Attached, N:Helmets White, O:Chili, N:Service Geological, O:Service Geological The States, N:Their Turkey, N:Turkey South, N:City Turkish, N:City Syrian, N:Territory Turkish, O:Their Worldwide Of Health
+
+-- where each country's matching titles landed (cluster: count, size, top terms) --
+  US:
+    cluster 155:   70  size   119  O:United Nations, N:United Nations, P:Tayyip Erdogan, N:White Helmets, N:President Recep Tayyip Erdogan, N:Vladimir Putin, P:Vladimir Putin, N:Emergency Management
+    cluster 83:    9  size   339  O:United States, N:United States, P:Joe Biden, O:White House, N:President Biden, N:Joe Biden, N:White House, N:Social Security
+    cluster 4276:    5  size     5  P:Sabrina Tavernise, P:Michael Barbaro, P:Garo Paylan, P:Salwa Abdul Rahman, P:Ben Hubbard, P:Bashar Al-Assad, P:Marion Lozano, P:Lisa Chow
+    cluster 142:    5  size    41  O:Twitter, P:Hunter Biden, N:Hunter Biden, P:Elon Musk, O:Facebook, N:Elon Musk, O:New York Post, N:New York Post
+  FR:
+    cluster 21:   10  size   350  O:Reuters, N:States Attached, N:Helmets White, O:Chili, N:Service Geological, O:Service Geological The States, N:Their Turkey, N:Turkey South
+    cluster 155:    5  size   119  O:United Nations, N:United Nations, P:Tayyip Erdogan, N:White Helmets, N:President Recep Tayyip Erdogan, N:Vladimir Putin, P:Vladimir Putin, N:Emergency Management
+    cluster 1490:    2  size     3  N:One East, N:City Aleppo, P:Yunus Sezer, P:Yusuf Mehdi, P:Yvan Colonna, P:Yves Nidegger, P:Yvonne Hwei Fung Lin, P:Zach Lavine
+    cluster 171:    1  size    69  N:Monday Morning, N:Turkey And Syrian, O:Agency Afad, N:Agency Afad, O:News Agency, N:Rescue Teams, N:Province Of Kahramanmaras, N:Coming Syria
+  DE:
+    cluster 171:   59  size    69  N:Monday Morning, N:Turkey And Syrian, O:Agency Afad, N:Agency Afad, O:News Agency, N:Rescue Teams, N:Province Of Kahramanmaras, N:Coming Syria
+    cluster 227:   10  size    57  N:Its Itunes Account, N:Settings Her, N:Federal Government, N:What They, N:Pregnancy Demolition, N:Twelve Years, N:Six Things, N:Her Treatment
+    cluster 4983:    4  size     4  N:Teutonic Red Cross, O:Caritas International Disaster, N:Unicef Syrian Also, N:Until Wednesday Morning, N:Temperatures Make It Difficult For, N:Syrian The Maltese, N:Donations From, N:Emergency Earthquake Turkey
+    cluster 4191:    3  size     3  N:Turkey Geologist, N:Million People, N:Rescue Team, N:Freezing Point, N:New Guidelines, N:Her Indifference, N:Number In Thousands Building, N:Public Facilities
+  JP:
+    cluster 21:   29  size   350  O:Reuters, N:States Attached, N:Helmets White, O:Chili, N:Service Geological, O:Service Geological The States, N:Their Turkey, N:Turkey South
+    cluster 155:    7  size   119  O:United Nations, N:United Nations, P:Tayyip Erdogan, N:White Helmets, N:President Recep Tayyip Erdogan, N:Vladimir Putin, P:Vladimir Putin, N:Emergency Management
+    cluster 142:    3  size    41  O:Twitter, P:Hunter Biden, N:Hunter Biden, P:Elon Musk, O:Facebook, N:Elon Musk, O:New York Post, N:New York Post
+    cluster 2598:    2  size     2  N:Book Town, N:Ottoman Empire, N:Memorial Monument, N:Ambassador Turkey, N:Turkey South, P:Atsuma Tsu, N:Atsuma Tsu, P:Yunus Sezer
+  BR:
+    cluster 21:  223  size   350  O:Reuters, N:States Attached, N:Helmets White, O:Chili, N:Service Geological, O:Service Geological The States, N:Their Turkey, N:Turkey South
+    cluster 3263:    5  size     5  N:Their Image, N:Region Turkish, N:Their Region, O:Their Worldwide Of Health, N:Their Worldwide, N:Apply Size, N:States Attached, N:City Turkish
+    cluster 1859:    4  size     4  O:Institute Of Geophysics Of University National, N:University National Unattended, N:Many Pass, O:Center German, O:Philippe, N:Center German, N:Pathway All, P:Yunus Sezer
+    cluster 1249:    4  size     4  N:Dump Truck, N:Plate South American, N:City Turkish, N:Bush Thick, N:Joao Camara, P:America Latin, N:America Latin, N:States Attached
+
+-- possible contamination: in cluster, title does not match (up to 30) --
+  [globo.com] Em meio a protestos, governo do Peru decreta emergência em sete regiões
+  [uol.com.br] Itália soa alarme sobre ataque hacker em larga escala
+  [uol.com.br] Governo do Peru decreta emergência em sete regiões do país
+  [globo.com] Foto pesada! Falcão e Messi posam com Neymar no aniversário do craque do PSG
+  [globo.com] Grammy 2023: Kim Petras é a primeira mulher trans a ganhar prêmio
+  [20minutes.fr] Turquie et Syrie : Un tremblement de terre fait près de 100 morts
+  [20minutes.fr] Turquie : Actualités, vidéos, images et infos en direct
+  [uol.com.br] Lula após terromoto na Turquia e Síria: Brasil manifesta solidariedade
+  [uol.com.br] ++ Lula expressa solidariedade a Síria e Turquia após tremor ++
+  [uol.com.br] Jamil: Com bom histórico, gesto de Lula a Turquia pode reaproximar Erdogan
+  [globo.com] VÍDEO: Prédio desaba do lado de civis em rua de Malátia, na Turquia
+  [uol.com.br] Sem registros de mortos, Embaixada confirma brasileiros desabrigados na Turquia
+  [uol.com.br] RedeTV! Em rede com você
+  [correiobraziliense.com.br] Anielle sobre a morte de Marielle: 'Fiquei com muita gana de lutar'
+  [uol.com.br] Portugal oferece ajuda ao Chile para conter incêndios florestais que já causaram 24 mortes
+  [uol.com.br] Nascido no Bronx: Grammy celebra 50º aniversário do hip hop
+  [uol.com.br] Tremor na Turquia causa danos graves em castelo de 2,2 mil anos
+  [uol.com.br] Itamaraty prepara ajuda humanitária a Síria e Turquia
+  [uol.com.br] Brasil está providenciando ajuda humanitária para Turquia e Síria, diz Itamaraty
+  [uol.com.br] Governo brasileiro oferece ajuda a Turquia e a Síria, diz Itamaraty
+  [uol.com.br] Varejistas oferecem descontos em iPhones de última geração na China
+  [uol.com.br] Itália alerta para ataque cibernético global
+  [uol.com.br] Opera Mundi: Lula expressa solidariedade a Síria e Turquia após tremor de magnitude 7.8
+  [uol.com.br] Opera Mundi: Itamaraty prepara ajuda humanitária a Síria e Turquia
+  [globo.com] Justiça condena Facebook a indenizar mulher que teve conta invadida por hackers no Maranhão
+  [uol.com.br] Imagem espacial da NASA capta gases de perigoso vulcão no Chile
+  [uol.com.br] Chile recebe ajuda internacional para combater incêndios
+  [uol.com.br] RedeTV! Em rede com você
+  [uol.com.br] Governo brasileiro acompanha situação de brasileiros na Turquia e na Síria
+  [globo.com] Madrugada de frio e quantidade de prédios destruídos dificultam resgate na Turquia e na Síria; contagem de mor
+
+-- possible fragmentation: title matches but outside cluster (up to 30) --
+  [washingtonpost.com] (cluster 155) 7.8 magnitude quake knocks down buildings in central Turkey
+  [sueddeutsche.de] (cluster 171) Heftige Erdbeben erschüttern Teile der Türkei und Syriens
+  [foxnews.com] (cluster 176) Turkey hit with 7.8 magnitude earthquake, felt across Middle East
+  [washingtonpost.com] (cluster 155) Magnitude 7.8 earthquake strikes southern Turkey - The Washington Post
+  [nbcnews.com] (cluster 155) 7.8 magnitude quake knocks down buildings in central Turkey
+  [nytimes.com] (cluster 155) Live Updates: Powerful Earthquake Strikes Turkey - The New York Times
+  [apnews.com] (cluster 155) Turkey earthquake: Live updates on 7.8 quake
+  [latimes.com] (cluster 155) Magnitude 7.8 earthquake shakes central Turkey, buildings collapse and multiple deaths are reported
+  [nytimes.com] (cluster 155) Deadly Turkey Earthquake Is Felt in Israel and Syria: Live Updates
+  [faz.net] (cluster 171) Erdbeben im Südosten der Türkei und im Norden von Syrien
+  [r7.com] (cluster 222) Forte terremoto de magnitude 7,8 atinge o sudeste da Turquia
+  [spiegel.de] (cluster 171) Türkei: Schwere Erdbeben an Grenze zu Syrien – Tote und Verletzte
+  [apnews.com] (cluster 155) Turkey earthquake: Live updates on 7.8 quake
+  [japantimes.co.jp] (cluster 260) Major quake kills more than 100 across Turkey and Syria
+  [nytimes.com] (cluster 176) A Timeline of Deadly Earthquakes in Turkey - The New York Times
+  [tagesschau.de] (cluster 171) Erdbeben in Türkei und Syrien: ++ Berichte über mehr als 180 Tote ++
+  [sueddeutsche.de] (cluster 171) Erdbeben in der Türkei und Syrien: Hunderte Tote
+  [tagesschau.de] (cluster 171) Grenzregion betroffen: Erdbeben trifft die Türkei und Syrien
+  [tagesschau.de] (cluster 171) Grenzgebiet zu Syrien : Erdbeben erschüttern Südosten der Türkei
+  [sueddeutsche.de] (cluster 171) Erdbeben in der Türkei und Syrien: Hunderte Tote - Lage ist "tragisch"
+  [nytimes.com] (cluster 155) How strong is a magnitude-7.8 quake?
+  [nytimes.com] (cluster 155) The earthquake struck war-scarred northern Syria.
+  [nytimes.com] (cluster 155) Live Updates: Earthquake Kills More Than 500 in Turkey and Syria
+  [usatoday.com] (cluster 155) Deadly 7.8 magnitude quake hits Turkey-Syria border; death toll climbs
+  [faz.net] (cluster 171) Erdbeben in der Türkei und in Syrien: Mehr als 600 Menschen gestorben
+  [spiegel.de] (cluster 425) Ukraine verspricht »notwendige Hilfe« nach Erdbeben
+  [foxnews.com] (cluster 155) More than 640 people dead in Turkey, Syria after 7.8 magnitude earthquake
+  [nytimes.com] (cluster 155) After the Quake: Photos from Turkey and Syria
+  [nbcnews.com] (cluster 457) Live updates: Deadly 7.8-magnitude earthquake hits Turkey and Syria
+  [nbcnews.com] (cluster 457) Turkey and Syria earthquake live updates: 7.8-magnitude quake kills hundreds
+
+-- first article per country in cluster (hours after event start, source, title) --
+  BR -2h [globo.com] Em meio a protestos, governo do Peru decreta emergência em sete regiões
+  FR +2h [lemonde.fr] Un séisme provoque au moins quinze morts en Turquie, et au moins huit morts en Syrie voisi
+  JP +4h [asahi.com] トルコ南部で地震、マグニチュード7.8　少なくとも15人死亡か：朝日新聞デジタル
+  DE +12h [spiegel.de] Türkei und Syrien: Überlebende berichten von der Erdbeben-Katastrophe
+  US +32h [nbcnews.com] Earthquakes in Turkey and Syria live updates: Death toll soars amid rescue efforts
+
+-- cluster articles per country per hour after event start (first 36h) --
+shape: (32, 6)
+┌─────────────┬─────┬─────┬─────┬─────┬─────┐
+│ hours_after ┆ US  ┆ FR  ┆ DE  ┆ JP  ┆ BR  │
+│ ---         ┆ --- ┆ --- ┆ --- ┆ --- ┆ --- │
+│ i32         ┆ u32 ┆ u32 ┆ u32 ┆ u32 ┆ u32 │
+╞═════════════╪═════╪═════╪═════╪═════╪═════╡
+│ 0           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 2   │
+│ 1           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 1   │
+│ 2           ┆ 0   ┆ 1   ┆ 0   ┆ 0   ┆ 0   │
+│ 3           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 3   │
+│ 4           ┆ 0   ┆ 1   ┆ 0   ┆ 1   ┆ 0   │
+│ 5           ┆ 0   ┆ 1   ┆ 0   ┆ 0   ┆ 0   │
+│ 7           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 1   │
+│ 8           ┆ 0   ┆ 1   ┆ 0   ┆ 1   ┆ 5   │
+│ 9           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 4   │
+│ 10          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 14  │
+│ 11          ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 10  │
+│ 12          ┆ 0   ┆ 0   ┆ 1   ┆ 1   ┆ 13  │
+│ 13          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 18  │
+│ 14          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 13  │
+│ 15          ┆ 0   ┆ 1   ┆ 0   ┆ 0   ┆ 10  │
+│ 16          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 4   │
+│ 17          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 15  │
+│ 18          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 5   │
+│ 19          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 11  │
+│ 20          ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 10  │
+│ 21          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 5   │
+│ 22          ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 6   │
+│ 23          ┆ 0   ┆ 0   ┆ 0   ┆ 2   ┆ 5   │
+│ 24          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 1   │
+│ 26          ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 1   │
+│ 28          ┆ 0   ┆ 2   ┆ 0   ┆ 0   ┆ 0   │
+│ 30          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 3   │
+│ 31          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 2   │
+│ 32          ┆ 1   ┆ 0   ┆ 1   ┆ 3   ┆ 3   │
+│ 33          ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 13  │
+│ 34          ┆ 0   ┆ 0   ┆ 0   ┆ 3   ┆ 7   │
+│ 35          ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 3   │
+└─────────────┴─────┴─────┴─────┴─────┴─────┘

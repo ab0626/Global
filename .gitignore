@@ -6,4 +6,5 @@ __pycache__/
 /data/
 /results/
 /src/
+v0/data/
 *.part
