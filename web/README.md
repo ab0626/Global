@@ -1,32 +1,90 @@
-# React + TypeScript + Vite
+# GDELT Explorer
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The GDELT Explorer is a local web interface for searching and visualizing the
+GDELT Events and Mentions slice served by the companion FastAPI backend.
 
-Currently, two official plugins are available:
+## Start the interface
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+From the repository root, start the backend first:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+GDELT_API_DATA=data/api uv run uvicorn api.app:app --reload --port 8000
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+In a second terminal, install the frontend dependencies and start Vite:
+
+```sh
+cd web
+npm install
+npm run dev
+```
+
+Open the local URL printed by Vite, usually
+[`http://localhost:5173`](http://localhost:5173). The Vite development server
+proxies every `/api` request to `http://127.0.0.1:8000`.
+
+If the backend is running elsewhere, set `GDELT_API_URL` when starting Vite:
+
+```sh
+GDELT_API_URL=http://127.0.0.1:9000 npm run dev
+```
+
+For a production build:
+
+```sh
+npm run build
+npm run preview
+```
+
+## Using the explorer
+
+The dashboard updates all panels when the search or filters change:
+
+- **Search bar** filters articles and linked event labels.
+- **Sort** changes article ordering.
+- **Quad-class chips** filter events by CAMEO cooperation/conflict class.
+- **Volume timeline** shows matched article share over time. Click a point to
+  zoom the time window; use **Reset** to return to the full dataset window.
+- **Tone timeline and histogram** show the tone distribution of matched
+  mentions.
+- **Coverage map** shows linked `ActionGeo` locations. Select a map location
+  to add it to the query.
+- **Facets** show common domains, languages, themes, actors, and locations.
+  Selecting a facet adds its query operator.
+- **Events** lists linked CAMEO events. Select an event to open its article
+  coverage drawer.
+- **Articles** lists the matching documents and their derived metadata.
+- **Data provenance** explains which fields come directly from the archive and
+  which are derived or unavailable.
+
+The initial query is `christchurch OR mosque`. Example queries:
+
+```text
+boeing OR 737 -flight
+idai OR mozambique
+brexit
+theme:protest
+location:"New Zealand"
+sourcecountry:france
+sourcelang:french
+domainis:stuff.co.nz
+quadclass:4
+```
+
+Supported query syntax includes bare terms, quoted phrases, `OR`, negation
+with `-`, and the field operators `domain:`, `domainis:`, `sourcelang:`,
+`sourcecountry:`, `theme:`, `location:`, `actor:`, and `quadclass:`.
+
+## Data limitations
+
+This interface uses the local Events and Mentions archive, not the complete
+live GDELT service. The archive does not include article headlines, article
+body text, social images, or mobile URLs:
+
+- Article titles are derived from URL slugs.
+- Search matches derived titles, domains, and linked CAMEO labels.
+- `seendate` is the earliest GDELT observation time for an article.
+- Publisher country is approximated from the domain country-code TLD.
+- Social image and mobile URL fields are empty.
+
+The backend's `/api/v2/ext/meta` endpoint exposes the full provenance map.
