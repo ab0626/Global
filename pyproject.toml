@@ -10,6 +10,8 @@ dependencies = [
     "scipy==1.15.3",
     "matplotlib==3.10.3",
     "boto3==1.38.46",
+    "fastapi>=0.141.1",
+    "uvicorn>=0.52.4",
     "scikit-learn>=1.5",
     "sentence-transformers>=3.0",
     "torch>=2.4",
@@ -17,6 +19,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "pytest==8.4.1",
     "ruff==0.12.1",
     "ty==0.0.80",

@@ -1,9 +1,60 @@
-# GDELT story clustering prototype
+# GDELT explorer and story clustering prototype
 
-An auditable, metadata-only test of whether communities of co-mentioned GDELT event
-IDs recover news stories. `story_clusters.py` compares connected components and
-Louvain using Jaccard similarity and co-mention counts. It does not infer publisher
-countries or publication times.
+Two pieces over the same open GDELT v2 archive:
+
+- **`api/` + `web/`** — a read API shaped like the public GDELT 2.0 APIs, served from a
+  locally built slice of Mentions/Events, plus an interactive dashboard on top of it.
+- **`story_clusters.py`** — an auditable, metadata-only test of whether communities of
+  co-mentioned GDELT event IDs recover news stories, comparing connected components and
+  Louvain using Jaccard similarity and co-mention counts. It does not infer publisher
+  countries or publication times.
+
+## GDELT-shaped API
+
+Build the tables once from downloaded raw files (see *Acquire data* below), then serve them:
+
+```sh
+uv run python build_api_dataset.py --mentions data/mentions --events data/events --output data/api
+GDELT_API_DATA=data/api uv run uvicorn api.app:app --port 8000
+```
+
+| Endpoint | Shape |
+|---|---|
+| `GET /api/v2/doc/doc` | DOC 2.0: `mode=artlist\|timelinevol\|timelinevolraw\|timelinetone\|tonechart`, `sort`, `maxrecords`, `timespan`, `startdatetime`, `enddatetime` |
+| `GET /api/v2/geo/geo` | GEO 2.0 GeoJSON `FeatureCollection` of `ActionGeo` points |
+| `GET /api/v2/ext/events`, `/ext/events/{id}` | event rows and one event's coverage (not published by the public APIs) |
+| `GET /api/v2/ext/facets`, `/ext/meta`, `/ext/health` | top domains/languages/themes, dataset provenance, liveness |
+
+Query syntax is a subset of the DOC language: bare terms, `"quoted phrases"`, `-negation`,
+`a OR b`, parenthesised OR groups, and `domain: domainis: sourcelang: sourcecountry: theme:
+location: actor: quadclass:`. Unsupported operators (for example `tone>5`) return HTTP 400
+instead of being silently dropped. Interactive OpenAPI docs are at `/docs`.
+
+### What the archive can and cannot support
+
+The live DOC API searches article **text** and returns publisher-supplied headlines and
+social images. The open archive carries neither, so this backend is explicit about it and
+`/api/v2/ext/meta` returns the per-field provenance it was built with:
+
+- `title` is **derived from the URL slug**, not a headline.
+- `sourcecountry` is **derived from the domain's ccTLD**, blank for `.com`/`.org`/etc.
+- `socialimage` and `url_mobile` are always empty.
+- search matches the derived title, the domain and the CAMEO labels (actors, locations,
+  action types) of the events an article mentions — not article body text.
+- `seendate` is `MentionTimeDate`, GDELT's observation time, not publication time.
+- Only `MentionType=1` (web) documents are served.
+
+## Explorer front end
+
+```sh
+cd web && npm install && npm run dev   # proxies /api to http://127.0.0.1:8000
+```
+
+The dashboard drives the API above: query bar with the operator syntax, coverage-volume
+timeline (click to zoom the window), tone timeline and tonechart histogram, a Leaflet map of
+event locations, clickable facets that append operators to the query, a CAMEO event table and
+a per-event drawer listing the articles that mention it. Set `VITE_API_BASE` to point the
+build at a remote API.
 
 ## Setup and checks
 
@@ -19,9 +70,10 @@ uv run ty check
 uv run pytest -q
 ```
 
-There are no pre-commit hooks. The script is the entrypoint; there is no web server
-or separate build. Local tests include a complete CLI run, an empty filtered graph,
-wire-fingerprint safeguards, sparse integer counts, and missing-file detection.
+There are no pre-commit hooks. Python tests cover a complete clustering CLI run, an empty
+filtered graph, wire-fingerprint safeguards, sparse integer counts, missing-file detection,
+and the API's response shapes over a synthetic slice. The front end is checked with
+`cd web && npx tsc -b && npm run lint && npm run build`.
 
 ## Acquire data on the EC2 instance
 
