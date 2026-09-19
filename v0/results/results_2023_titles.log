@@ -1,0 +1,149 @@
+13204 articles x 21359 entity terms (types=PONE, max_df=0.5)
+title_weight=1.0; similarity quantiles 50/90/99/99.9%: [0.094 0.257 0.47  0.735]
+threshold 0.3: 5073506 edges
+threshold 0.4: 1464790 edges
+threshold 0.5: 486893 edges
+threshold 0.6: 185518 edges
+threshold 0.7: 71043 edges
+
+=== event cluster by config (purity = share of cluster titles matching the event keywords; recall = share of all matching titles captured) ===
+config                 clusters   size  purity  recall  countries / languages
+t=0.3 components             28  13177    0.06    1.00  {'BR': 7009, 'DE': 1390, 'FR': 829, 'JP': 1077, 'US': 2872} / {'por': 7009, 'eng': 3073, 'deu': 1388, 'jpn': 856, 'fra': 816, 'spa': 31, 'zho': 3, 'tur': 1}
+t=0.3 leiden r=0.5           30   1113    0.66    0.99  {'BR': 497, 'DE': 185, 'FR': 53, 'JP': 72, 'US': 306} / {'por': 497, 'eng': 317, 'deu': 184, 'jpn': 57, 'fra': 50, 'spa': 5, 'zho': 2, 'tur': 1}
+t=0.3 leiden r=1.0           34   1162    0.64    1.00  {'BR': 526, 'DE': 193, 'FR': 64, 'JP': 71, 'US': 308} / {'por': 526, 'eng': 316, 'deu': 192, 'fra': 62, 'jpn': 57, 'spa': 6, 'zho': 2, 'tur': 1}
+t=0.3 leiden r=2.0           55    989    0.75    0.99  {'BR': 453, 'DE': 181, 'FR': 44, 'JP': 65, 'US': 246} / {'por': 453, 'eng': 254, 'deu': 180, 'jpn': 53, 'fra': 42, 'spa': 4, 'zho': 2, 'tur': 1}
+t=0.4 components             60  13141    0.06    1.00  {'BR': 7007, 'DE': 1390, 'FR': 828, 'JP': 1077, 'US': 2839} / {'por': 7007, 'eng': 3040, 'deu': 1388, 'jpn': 856, 'fra': 815, 'spa': 31, 'zho': 3, 'tur': 1}
+t=0.4 leiden r=0.5           70   1027    0.72    1.00  {'BR': 464, 'DE': 185, 'FR': 49, 'JP': 68, 'US': 261} / {'por': 464, 'eng': 269, 'deu': 184, 'jpn': 56, 'fra': 47, 'spa': 4, 'zho': 2, 'tur': 1}
+t=0.4 leiden r=1.0           74    889    0.83    0.99  {'BR': 401, 'DE': 173, 'FR': 39, 'JP': 63, 'US': 213} / {'por': 401, 'eng': 223, 'deu': 172, 'jpn': 51, 'fra': 37, 'spa': 3, 'tur': 1, 'zho': 1}
+t=0.4 leiden r=2.0           81    845    0.87    0.99  {'BR': 382, 'DE': 162, 'FR': 36, 'JP': 62, 'US': 203} / {'por': 382, 'eng': 212, 'deu': 161, 'jpn': 51, 'fra': 34, 'spa': 3, 'zho': 1, 'tur': 1}
+t=0.5 components            544  12533    0.06    1.00  {'BR': 6820, 'DE': 1368, 'FR': 806, 'JP': 1060, 'US': 2479} / {'por': 6820, 'eng': 2665, 'deu': 1366, 'jpn': 855, 'fra': 793, 'spa': 30, 'zho': 3, 'tur': 1}
+t=0.5 leiden r=0.5          563    895    0.83    0.99  {'BR': 411, 'DE': 171, 'FR': 40, 'JP': 62, 'US': 211} / {'por': 411, 'eng': 220, 'deu': 170, 'jpn': 51, 'fra': 38, 'spa': 3, 'tur': 1, 'zho': 1}
+t=0.5 leiden r=1.0          574    844    0.87    0.98  {'BR': 380, 'DE': 163, 'FR': 35, 'JP': 62, 'US': 204} / {'por': 380, 'eng': 213, 'deu': 162, 'jpn': 51, 'fra': 33, 'spa': 3, 'zho': 1, 'tur': 1}
+t=0.5 leiden r=2.0          581    771    0.92    0.95  {'BR': 335, 'DE': 154, 'FR': 33, 'JP': 60, 'US': 189} / {'por': 335, 'eng': 198, 'deu': 153, 'jpn': 49, 'fra': 31, 'spa': 3, 'tur': 1, 'zho': 1}
+t=0.6 components           2893   9199    0.08    0.99  {'BR': 5060, 'DE': 1204, 'FR': 562, 'JP': 891, 'US': 1482} / {'por': 5060, 'eng': 1614, 'deu': 1202, 'jpn': 742, 'fra': 554, 'spa': 23, 'zho': 3, 'tur': 1}
+t=0.6 leiden r=0.5         2930    843    0.86    0.98  {'BR': 386, 'DE': 162, 'FR': 34, 'JP': 61, 'US': 200} / {'por': 386, 'eng': 209, 'deu': 161, 'jpn': 50, 'fra': 32, 'spa': 3, 'zho': 1, 'tur': 1}
+t=0.6 leiden r=1.0         2942    790    0.89    0.95  {'BR': 354, 'DE': 159, 'FR': 31, 'JP': 60, 'US': 186} / {'por': 354, 'eng': 195, 'deu': 158, 'jpn': 49, 'fra': 29, 'spa': 3, 'tur': 1, 'zho': 1}
+t=0.6 leiden r=2.0         2960    323    0.93    0.40  {'BR': 131, 'DE': 87, 'FR': 16, 'JP': 24, 'US': 65} / {'por': 131, 'deu': 86, 'eng': 68, 'jpn': 21, 'fra': 15, 'spa': 1, 'tur': 1}
+t=0.7 components           6671   3375    0.21    0.94  {'BR': 1535, 'DE': 636, 'FR': 181, 'JP': 485, 'US': 538} / {'por': 1535, 'deu': 634, 'eng': 589, 'jpn': 425, 'fra': 178, 'spa': 10, 'zho': 3, 'tur': 1}
+t=0.7 leiden r=0.5         6695    710    0.90    0.86  {'BR': 296, 'DE': 153, 'FR': 31, 'JP': 55, 'US': 175} / {'por': 296, 'eng': 184, 'deu': 152, 'jpn': 44, 'fra': 29, 'spa': 3, 'zho': 1, 'tur': 1}
+t=0.7 leiden r=1.0         6702    459    0.89    0.55  {'BR': 169, 'DE': 115, 'FR': 20, 'JP': 42, 'US': 113} / {'por': 169, 'eng': 120, 'deu': 114, 'jpn': 34, 'fra': 19, 'spa': 2, 'tur': 1}
+t=0.7 leiden r=2.0         6721    268    0.97    0.35  {'BR': 95, 'DE': 83, 'FR': 16, 'JP': 26, 'US': 48} / {'por': 95, 'deu': 82, 'eng': 52, 'jpn': 23, 'fra': 15, 'tur': 1}
+
+=== detail for t=0.5 leiden r=1.0 title_weight=1.0: event cluster 29 ===
+top terms: O:Reuters, N:States Attached, N:Helmets White, N:Service Geological, N:City Turkish, O:Service Geological The States, N:Their Turkey, P:Tayyip Erdogan, N:Turkey South, O:Twitter, O:United Nations, O:United States
+
+-- where each country's matching titles landed (cluster: count, size, top terms) --
+  US:
+    cluster 29:  181  size   844  O:Reuters, N:States Attached, N:Helmets White, N:Service Geological, N:City Turkish, O:Service Geological The States, N:Their Turkey, P:Tayyip Erdogan
+    cluster 2:    1  size  2360  N:Police Civilian, N:Military Police, N:Sao Paulo, N:Fire Station, N:Police Station, O:Their Police, O:Young, N:Their Police Civilian
+  FR:
+    cluster 29:   29  size   844  O:Reuters, N:States Attached, N:Helmets White, N:Service Geological, N:City Turkish, O:Service Geological The States, N:Their Turkey, P:Tayyip Erdogan
+    cluster 3:    2  size   416  N:States Attached, P:Harry Styles, N:Grammy Awards, P:Los Angeles, N:Harry Styles, P:Kendrick Lamar, N:Best Album, N:Violates Davis
+  DE:
+    cluster 29:  142  size   844  O:Reuters, N:States Attached, N:Helmets White, N:Service Geological, N:City Turkish, O:Service Geological The States, N:Their Turkey, P:Tayyip Erdogan
+    cluster 9:    2  size   556  N:Its Itunes Account, N:Settings Her, N:Town Hall, N:Federal Government, O:Bertelsmann, N:Gruner Year, O:Young, N:Subscriber Automatically
+    cluster 2:    1  size  2360  N:Police Civilian, N:Military Police, N:Sao Paulo, N:Fire Station, N:Police Station, O:Their Police, O:Young, N:Their Police Civilian
+  JP:
+    cluster 29:   55  size   844  O:Reuters, N:States Attached, N:Helmets White, N:Service Geological, N:City Turkish, O:Service Geological The States, N:Their Turkey, P:Tayyip Erdogan
+  BR:
+    cluster 29:  325  size   844  O:Reuters, N:States Attached, N:Helmets White, N:Service Geological, N:City Turkish, O:Service Geological The States, N:Their Turkey, P:Tayyip Erdogan
+    cluster 3:    2  size   416  N:States Attached, P:Harry Styles, N:Grammy Awards, P:Los Angeles, N:Harry Styles, P:Kendrick Lamar, N:Best Album, N:Violates Davis
+    cluster 24:    1  size   450  N:President Biden, P:Joe Biden, O:White House, O:United States, N:White House, N:Social Security, N:Fox News, N:Joe Biden
+    cluster 19:    1  size   200  O:Microsoft, O:Google, N:Artificial Intelligence, N:World Wide Web, N:Their Microsoft, O:Reuters, O:Twitter, N:States Attached
+
+-- possible contamination: in cluster, title does not match (up to 30) --
+  [20minutes.fr] Turquie et Syrie : Un tremblement de terre fait près de 100 morts
+  [sueddeutsche.de] Der Libanon steckt tief in einer politischen und finanziellen Krise
+  [apnews.com] Live updates | Russia readies aid for Turkey, Syria
+  [20minutes.fr] Turquie : Actualités, vidéos, images et infos en direct
+  [20minutes.fr] Chili : 24 morts et plus de 1.100 blessés dans d'immenses feux de forêts
+  [uol.com.br] Síria: perfil de uma nação marcada pelo autoritarismo e pela guerra
+  [tagesschau.de] Stärke von 7,5: Weiteres Beben erschüttert Türkei
+  [tagesschau.de] Spenden: Hilfe für die Menschen in der Türkei und in Syrien
+  [uol.com.br] ++ Lula expressa solidariedade a Síria e Turquia após tremor ++
+  [globo.com] Síria: perfil de uma nação marcada pelo autoritarismo e pela guerra
+  [globo.com] VÍDEO: Prédio desaba do lado de civis em rua de Malátia, na Turquia
+  [globo.com] Turquia: perfil da antiga potência otomana que liga Ocidente e Oriente
+  [spiegel.de] Türkei: Weiteres starkes Beben erschüttert die Türkei
+  [uol.com.br] Sem registros de mortos, Embaixada confirma brasileiros desabrigados na Turquia
+  [uol.com.br] Itália prepara equipes e recursos para ajudar Turquia
+  [uol.com.br] Rússia e Israel enviarão ajuda à Síria
+  [uol.com.br] Tremor na Turquia causa danos graves em castelo de 2,2 mil anos
+  [uol.com.br] Itamaraty prepara ajuda humanitária a Síria e Turquia
+  [globo.com] 'Estamos bem', diz jogadora da seleção brasileira de vôlei que está na Turquia; tremor deixou mais de mil mort
+  [uol.com.br] Brasil está providenciando ajuda humanitária para Turquia e Síria, diz Itamaraty
+  [uol.com.br] Governo brasileiro oferece ajuda a Turquia e a Síria, diz Itamaraty
+  [sueddeutsche.de] Episches Beben nach 1000 Jahren Pause
+  [correiobraziliense.com.br] Síria: perfil de uma nação marcada pelo autoritarismo e pela guerra
+  [correiobraziliense.com.br] Turquia: perfil da antiga potência otomana que liga Ocidente e Oriente
+  [uol.com.br] Opera Mundi: Lula expressa solidariedade a Síria e Turquia após tremor de magnitude 7.8
+  [uol.com.br] Opera Mundi: Itamaraty prepara ajuda humanitária a Síria e Turquia
+  [spiegel.de] Syrien fordert internationale Staatengemeinschaft zur Hilfe auf – Israel bietet Hilfe an
+  [washingtonpost.com] Survivors scream as desperate rescuers work in Turkey, Syria
+  [uol.com.br] Chile recebe ajuda internacional para combater incêndios
+  [apnews.com] Survivors scream as desperate rescuers work in Turkey, Syria
+
+-- possible fragmentation: title matches but outside cluster (up to 30) --
+  [20minutes.fr] (cluster 3) C'est l'heure du BIM : Les retraites à l'Assemblée, séisme meurtrier en Syrie et Beyoncé reine des G
+  [usatoday.com] (cluster 2) Monday weather radar, updates: Texas thunderstorm, Buffalo earthquake
+  [20minutes.fr] (cluster 3) En images : Harry Styles récompensé aux Grammy Awards, séisme en Turquie et Syrie, et réforme des re
+  [globo.com] (cluster 129) Dançarina potiguar relata orientações das autoridades após terremoto na Turquia: 'Pediram pra manter
+  [globo.com] (cluster 19) Turquia recusa oferta de Elon Musk para envio de serviço de internet após terremoto
+  [correiobraziliense.com.br] (cluster 24) Biden promete ajuda dos EUA após terremoto na Turquia e na Síria
+  [globo.com] (cluster 3) Após terremoto, ao menos 20 detentos fogem de prisão na Síria, vários ligados aos Estado Islâmico
+  [globo.com] (cluster 3) Após terremoto, ao menos 20 detentos fogem de prisão na Síria, vários ligados aos Estado Islâmico
+  [spiegel.de] (cluster 2) Statik für den Ernstfall: Wie man erdbebensicher baut
+  [faz.net] (cluster 9) Heute in Rhein-Main: Hessen schickt Helfer in Erdbebenregion
+  [spiegel.de] (cluster 9) News: Erdbeben, Syrien, Türkei, Olaf Scholz, Karneval, Friedrich Merz, Joe Biden, State of the Union
+  [uol.com.br] (cluster 0) Wall Street cai com nervosismo por Fed
+
+-- first article per country in cluster (hours after event start, source, title) --
+  US +1h [washingtonpost.com] 7.8 magnitude quake knocks down buildings in central Turkey
+  DE +1h [sueddeutsche.de] Heftige Erdbeben erschüttern Teile der Türkei und Syriens
+  BR +1h [globo.com] Forte terremoto atinge região central da Turquia
+  FR +2h [lemonde.fr] Un séisme provoque au moins quinze morts en Turquie, et au moins huit morts en Syrie voisi
+  JP +4h [asahi.com] トルコ南部で地震、マグニチュード7.8　少なくとも15人死亡か：朝日新聞デジタル
+
+-- cluster articles per country per hour after event start (first 36h) --
+shape: (35, 6)
+┌─────────────┬─────┬─────┬─────┬─────┬─────┐
+│ hours_after ┆ US  ┆ FR  ┆ DE  ┆ JP  ┆ BR  │
+│ ---         ┆ --- ┆ --- ┆ --- ┆ --- ┆ --- │
+│ i32         ┆ u32 ┆ u32 ┆ u32 ┆ u32 ┆ u32 │
+╞═════════════╪═════╪═════╪═════╪═════╪═════╡
+│ 1           ┆ 3   ┆ 0   ┆ 1   ┆ 0   ┆ 1   │
+│ 2           ┆ 4   ┆ 1   ┆ 0   ┆ 0   ┆ 0   │
+│ 3           ┆ 1   ┆ 0   ┆ 2   ┆ 0   ┆ 2   │
+│ 4           ┆ 2   ┆ 1   ┆ 0   ┆ 2   ┆ 0   │
+│ 5           ┆ 0   ┆ 0   ┆ 5   ┆ 0   ┆ 0   │
+│ 6           ┆ 3   ┆ 0   ┆ 0   ┆ 0   ┆ 0   │
+│ 7           ┆ 2   ┆ 0   ┆ 3   ┆ 0   ┆ 1   │
+│ 8           ┆ 4   ┆ 2   ┆ 0   ┆ 1   ┆ 5   │
+│ 9           ┆ 0   ┆ 1   ┆ 1   ┆ 0   ┆ 4   │
+│ 10          ┆ 1   ┆ 1   ┆ 4   ┆ 0   ┆ 14  │
+│ 11          ┆ 4   ┆ 0   ┆ 1   ┆ 1   ┆ 15  │
+│ 12          ┆ 3   ┆ 0   ┆ 2   ┆ 1   ┆ 14  │
+│ 13          ┆ 2   ┆ 0   ┆ 3   ┆ 0   ┆ 18  │
+│ 14          ┆ 4   ┆ 0   ┆ 1   ┆ 0   ┆ 18  │
+│ 15          ┆ 3   ┆ 1   ┆ 7   ┆ 0   ┆ 13  │
+│ 16          ┆ 5   ┆ 0   ┆ 3   ┆ 0   ┆ 10  │
+│ 17          ┆ 2   ┆ 0   ┆ 2   ┆ 0   ┆ 19  │
+│ 18          ┆ 5   ┆ 0   ┆ 3   ┆ 0   ┆ 5   │
+│ 19          ┆ 7   ┆ 2   ┆ 1   ┆ 0   ┆ 15  │
+│ 20          ┆ 6   ┆ 0   ┆ 3   ┆ 1   ┆ 15  │
+│ 21          ┆ 11  ┆ 0   ┆ 0   ┆ 0   ┆ 4   │
+│ 22          ┆ 1   ┆ 0   ┆ 0   ┆ 2   ┆ 8   │
+│ 23          ┆ 0   ┆ 0   ┆ 0   ┆ 4   ┆ 7   │
+│ 24          ┆ 3   ┆ 0   ┆ 1   ┆ 0   ┆ 2   │
+│ 25          ┆ 3   ┆ 0   ┆ 0   ┆ 1   ┆ 0   │
+│ 26          ┆ 1   ┆ 1   ┆ 3   ┆ 2   ┆ 1   │
+│ 27          ┆ 0   ┆ 0   ┆ 0   ┆ 2   ┆ 0   │
+│ 28          ┆ 6   ┆ 3   ┆ 1   ┆ 1   ┆ 0   │
+│ 29          ┆ 4   ┆ 1   ┆ 3   ┆ 1   ┆ 0   │
+│ 30          ┆ 5   ┆ 0   ┆ 0   ┆ 0   ┆ 3   │
+│ 31          ┆ 3   ┆ 1   ┆ 2   ┆ 0   ┆ 2   │
+│ 32          ┆ 2   ┆ 0   ┆ 2   ┆ 6   ┆ 5   │
+│ 33          ┆ 1   ┆ 1   ┆ 3   ┆ 2   ┆ 12  │
+│ 34          ┆ 3   ┆ 0   ┆ 6   ┆ 3   ┆ 8   │
+│ 35          ┆ 1   ┆ 0   ┆ 2   ┆ 4   ┆ 5   │
+└─────────────┴─────┴─────┴─────┴─────┴─────┘

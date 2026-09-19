@@ -1,0 +1,176 @@
+13204 articles x 21359 entity terms (types=PONE, max_df=0.5)
+title_weight=0.0; similarity quantiles 50/90/99/99.9%: [0.    0.    0.081 0.353]
+threshold 0.3: 113826 edges
+threshold 0.4: 59315 edges
+threshold 0.5: 33323 edges
+threshold 0.6: 20181 edges
+threshold 0.7: 12597 edges
+
+=== event cluster by config (purity = share of cluster titles matching the event keywords; recall = share of all matching titles captured) ===
+config                 clusters   size  purity  recall  countries / languages
+t=0.3 components           1781  10708    0.05    0.78  {'BR': 6343, 'DE': 689, 'FR': 560, 'JP': 911, 'US': 2205} / {'por': 6343, 'eng': 2334, 'jpn': 759, 'deu': 687, 'fra': 552, 'spa': 29, 'zho': 3, 'tur': 1}
+t=0.3 leiden r=0.5         1835   1058    0.25    0.35  {'BR': 956, 'DE': 12, 'FR': 46, 'JP': 15, 'US': 29} / {'por': 956, 'fra': 45, 'eng': 21, 'spa': 12, 'jpn': 12, 'deu': 11, 'tur': 1}
+t=0.3 leiden r=1.0         1847    439    0.44    0.26  {'BR': 383, 'DE': 5, 'FR': 14, 'JP': 21, 'US': 16} / {'por': 383, 'eng': 23, 'jpn': 16, 'fra': 13, 'deu': 4}
+t=0.3 leiden r=2.0         1877    231    0.47    0.15  {'BR': 215, 'FR': 3, 'JP': 11, 'US': 2} / {'por': 215, 'jpn': 8, 'eng': 5, 'fra': 3}
+t=0.4 components           3321   8198    0.05    0.59  {'BR': 5371, 'DE': 274, 'FR': 405, 'JP': 779, 'US': 1369} / {'por': 5371, 'eng': 1465, 'jpn': 662, 'fra': 400, 'deu': 273, 'spa': 24, 'zho': 3}
+t=0.4 leiden r=0.5         3375    660    0.24    0.22  {'BR': 611, 'DE': 4, 'FR': 14, 'JP': 16, 'US': 15} / {'por': 611, 'jpn': 14, 'fra': 13, 'eng': 13, 'spa': 5, 'deu': 4}
+t=0.4 leiden r=1.0         3387    234    0.34    0.11  {'BR': 204, 'DE': 2, 'FR': 8, 'JP': 14, 'US': 6} / {'por': 204, 'jpn': 12, 'eng': 9, 'fra': 7, 'deu': 2}
+t=0.4 leiden r=2.0         3425    179    0.40    0.10  {'BR': 165, 'FR': 5, 'JP': 5, 'US': 4} / {'por': 165, 'eng': 6, 'fra': 5, 'jpn': 3}
+t=0.5 components           5611   4392    0.06    0.35  {'BR': 3072, 'DE': 155, 'FR': 243, 'JP': 410, 'US': 512} / {'por': 3072, 'eng': 540, 'jpn': 365, 'fra': 241, 'deu': 155, 'spa': 16, 'zho': 3}
+t=0.5 leiden r=0.5         5654    285    0.23    0.09  {'BR': 269, 'DE': 3, 'FR': 5, 'JP': 3, 'US': 5} / {'por': 269, 'eng': 6, 'fra': 5, 'deu': 3, 'jpn': 2}
+t=0.5 leiden r=1.0         5668    145    0.41    0.08  {'BR': 123, 'FR': 5, 'JP': 3, 'US': 14} / {'por': 123, 'eng': 15, 'fra': 5, 'jpn': 2}
+t=0.5 leiden r=2.0         5691    123    0.45    0.07  {'BR': 112, 'FR': 3, 'JP': 3, 'US': 5} / {'por': 112, 'eng': 6, 'fra': 3, 'jpn': 2}
+t=0.6 components           7855   1383    0.05    0.10  {'BR': 1144, 'DE': 21, 'FR': 69, 'JP': 63, 'US': 86} / {'por': 1144, 'eng': 97, 'fra': 68, 'jpn': 51, 'deu': 21, 'zho': 2}
+t=0.6 leiden r=0.5         7869    173    0.21    0.05  {'BR': 160, 'DE': 1, 'FR': 10, 'JP': 2} / {'por': 160, 'fra': 10, 'jpn': 1, 'eng': 1, 'deu': 1}
+t=0.6 leiden r=1.0         7879    111    0.30    0.04  {'BR': 98, 'DE': 1, 'FR': 10, 'JP': 2} / {'por': 98, 'fra': 10, 'jpn': 1, 'deu': 1, 'eng': 1}
+t=0.6 leiden r=2.0         7889     94    0.35    0.04  {'BR': 82, 'FR': 10, 'JP': 2} / {'por': 82, 'fra': 10, 'jpn': 1, 'eng': 1}
+t=0.7 components           9622     38    0.42    0.02  {'BR': 36, 'FR': 1, 'JP': 1} / {'por': 36, 'jpn': 1, 'fra': 1}
+t=0.7 leiden r=0.5         9623     38    0.42    0.02  {'BR': 36, 'FR': 1, 'JP': 1} / {'por': 36, 'jpn': 1, 'fra': 1}
+t=0.7 leiden r=1.0         9624     38    0.42    0.02  {'BR': 36, 'FR': 1, 'JP': 1} / {'por': 36, 'jpn': 1, 'fra': 1}
+t=0.7 leiden r=2.0         9625     38    0.42    0.02  {'BR': 36, 'FR': 1, 'JP': 1} / {'por': 36, 'jpn': 1, 'fra': 1}
+
+=== detail for t=0.3 leiden r=0.5 title_weight=0.0: event cluster 11 ===
+top terms: N:States Attached, O:Reuters, O:Chili, N:Union European, N:Home White, O:Union European, N:Helmets White, N:America Latin, P:America Latin, N:Service Geological, O:Service Geological The States, N:After All
+
+-- where each country's matching titles landed (cluster: count, size, top terms) --
+  US:
+    cluster 16:   96  size   796  O:Twitter, N:New York, O:United Nations, N:Fox News, N:South Korea, O:Facebook, N:North Korea, O:Instagram
+    cluster 8:   23  size  1268  O:United States, N:United States, N:President Biden, P:Joe Biden, O:White House, N:White House, N:Fox News, N:Joe Biden
+    cluster 1221:    5  size     5  P:Sabrina Tavernise, P:Michael Barbaro, P:Garo Paylan, P:Salwa Abdul Rahman, P:Ben Hubbard, P:Bashar Al-Assad, P:Marion Lozano, P:Lisa Chow
+    cluster 7:    4  size   300  P:Los Angeles, N:Los Angeles, P:Harry Styles, N:Los Angeles Times, N:Harry Styles, N:Grammy Awards, O:City Council, P:Kim Petras
+  FR:
+    cluster 8:    8  size  1268  O:United States, N:United States, N:President Biden, P:Joe Biden, O:White House, N:White House, N:Fox News, N:Joe Biden
+    cluster 11:    7  size  1058  N:States Attached, O:Reuters, O:Chili, N:Union European, N:Home White, O:Union European, N:Helmets White, N:America Latin
+    cluster 16:    4  size   796  O:Twitter, N:New York, O:United Nations, N:Fox News, N:South Korea, O:Facebook, N:North Korea, O:Instagram
+    cluster 12:    3  size   414  N:United Kingdom, N:Kingdom Attached, N:New Year, N:Prime Minister, N:For Example, N:Her New, N:Violates Davis, N:Best Album
+  DE:
+    cluster 16:   22  size   796  O:Twitter, N:New York, O:United Nations, N:Fox News, N:South Korea, O:Facebook, N:North Korea, O:Instagram
+    cluster 621:   17  size    20  N:Turkey And Syrian, N:Fuat Oktay Late, N:Country Vice, N:Province Of Kahramanmaras, O:Agency Afad, N:Agency Afad, N:Disaster Lived, N:Weather Conditions
+    cluster 74:   10  size    79  N:Settings Her, N:Its Itunes Account, N:Federal Government, N:Federal Ministry Of Economics, N:Minister Of Defense, N:Weapons Deliveries, N:Insolvency Administrator, N:Crude Oil
+    cluster 112:    6  size     6  O:News Agency, N:Catastrophe Protection Authority, N:Rescue Teams People, N:Rescue Teams, N:Coming Syria, N:Alarm Level, N:Turkey President Reception, N:State News Agency
+  JP:
+    cluster 9:   30  size   687  N:New Corona, O:Ministry Of Health, O:High School, P:Kishida Fumio, P:Corona Wazawai, N:Corona Wazawai, N:High School, O:Major League Baseball
+    cluster 16:    9  size   796  O:Twitter, N:New York, O:United Nations, N:Fox News, N:South Korea, O:Facebook, N:North Korea, O:Instagram
+    cluster 11:    6  size  1058  N:States Attached, O:Reuters, O:Chili, N:Union European, N:Home White, O:Union European, N:Helmets White, N:America Latin
+    cluster 0:    2  size   381  N:Her East, N:Curb You, O:Renault, O:Olympics, O:Nissan, N:World Cup, P:Vladimir Putin, O:Philippe
+  BR:
+    cluster 11:  248  size  1058  N:States Attached, O:Reuters, O:Chili, N:Union European, N:Home White, O:Union European, N:Helmets White, N:America Latin
+    cluster 2:   25  size  1211  N:Sao Paulo, N:Goggle Box, N:Goggle Box Globe, N:Rio De Janeiro, N:Port Gay, N:Seconds Her, N:Apply Size, N:Privacy Topics
+    cluster 3:    9  size  1951  N:Police Civilian, N:Military Police, O:Young, N:Fire Station, N:Police Station, O:Their Police, N:Prosecuting Officer, N:Read More
+    cluster 12:    6  size   414  N:United Kingdom, N:Kingdom Attached, N:New Year, N:Prime Minister, N:For Example, N:Her New, N:Violates Davis, N:Best Album
+
+-- possible contamination: in cluster, title does not match (up to 30) --
+  [uol.com.br] Dominatrix Mel Fire inaugura estúdio para fãs (discretos) de fetiches em SP
+  [uol.com.br] Regina Duarte volta para a Globo em quadro de programa de Luciano Huck
+  [globo.com] Em meio a protestos, governo do Peru decreta emergência em sete regiões
+  [uol.com.br] Uma vez em 50 mil anos: veja fotos do 'cometa verde' pelo mundo
+  [uol.com.br] O que é o quadrado de Sator, o quebra-cabeça sem solução há 150 anos
+  [globo.com] Grammy 2023: os melhores looks do red carpet
+  [uol.com.br] Pânico 6: Novo pôster sugere Ghostface dominando Nova York
+  [uol.com.br] Avatar 2 ultrapassa Titanic e fica em 3º na lista das maiores bilheterias fora dos EUA
+  [uol.com.br] Netflix é acusada de "educar" crianças com animação que mostra bumbuns
+  [uol.com.br] Coreia vai inaugurar museu dedicado a robôs e IA; veja o que vai ter
+  [uol.com.br] Homem-Formiga 3: Bill Murray pediu permissão para participar do filme
+  [uol.com.br] 7 filmes parecidos com The Last of Us e onde assistir
+  [r7.com] Militares dos EUA recolhem restos de 'balão espião' chinês que caíram no mar
+  [uol.com.br] Bebê da novela Por Amor reaparece no Domingão com Huck e faz revelação
+  [globo.com] Penteados esculturais são destaque no tapete vermelho do Grammy 2023
+  [uol.com.br] Anitta no Grammy 2023
+  [globo.com] No Flamengo, David Luiz volta ao Mundial para interromper hegemonia europeia
+  [uol.com.br] Itália soa alarme sobre ataque hacker em larga escala
+  [r7.com] Gui Araujo faz declaração a Karoline Lima após eles assumirem o namoro
+  [r7.com] EUA fazem buscas por destroços de balão chinês e prometem investigação
+  [uol.com.br] Governo do Peru decreta emergência em sete regiões do país
+  [globo.com] Caso Tyre Nichols: conheça a história do jovem negro morto após ser agredido por policiais nos EUA
+  [globo.com] Grammy 2023: os looks do tapete vermelho da premiação
+  [uol.com.br] Homem acusa George Santos de assédio sexual no Capitólio
+  [globo.com] Bárbara Evans elege beachwear all blue para mais um dia de lua de mel
+  [uol.com.br] Grammy 2023: Lizzo faz performance DE ARREPIAR do hino "Special", ao lado de coral de mulheres negras; assista
+  [uol.com.br] PASSAGENS AÉREAS do Recife para Miami, Nova Iorque e Orlando A PARTIR DE R$ 798
+  [r7.com] Colômbia identifica balão similar ao que os EUA derrubaram ontem
+  [globo.com] Anitta não leva o Grammy de Artista Revelação
+  [globo.com] Foto pesada! Falcão e Messi posam com Neymar no aniversário do craque do PSG
+
+-- possible fragmentation: title matches but outside cluster (up to 30) --
+  [washingtonpost.com] (cluster 16) 7.8 magnitude quake knocks down buildings in central Turkey
+  [sueddeutsche.de] (cluster 62) Heftige Erdbeben erschüttern Teile der Türkei und Syriens
+  [foxnews.com] (cluster 16) Turkey hit with 7.8 magnitude earthquake, felt across Middle East
+  [washingtonpost.com] (cluster 16) Magnitude 7.8 earthquake strikes southern Turkey - The Washington Post
+  [nbcnews.com] (cluster 16) 7.8 magnitude quake knocks down buildings in central Turkey
+  [nytimes.com] (cluster 16) Live Updates: Powerful Earthquake Strikes Turkey - The New York Times
+  [apnews.com] (cluster 16) Turkey earthquake: Live updates on 7.8 quake
+  [latimes.com] (cluster 16) Magnitude 7.8 earthquake shakes central Turkey, buildings collapse and multiple deaths are reported
+  [lemonde.fr] (cluster 16) Un séisme provoque au moins quinze morts en Turquie, et au moins huit morts en Syrie voisine
+  [nytimes.com] (cluster 16) Deadly Turkey Earthquake Is Felt in Israel and Syria: Live Updates
+  [faz.net] (cluster 62) Erdbeben im Südosten der Türkei und im Norden von Syrien
+  [r7.com] (cluster 71) Forte terremoto de magnitude 7,8 atinge o sudeste da Turquia
+  [spiegel.de] (cluster 73) Türkei: Schwere Erdbeben an Grenze zu Syrien – Tote und Verletzte
+  [apnews.com] (cluster 16) Turkey earthquake: Live updates on 7.8 quake
+  [asahi.com] (cluster 9) トルコ南部で地震、マグニチュード7.8　少なくとも15人死亡か：朝日新聞デジタル
+  [japantimes.co.jp] (cluster 89) Major quake kills more than 100 across Turkey and Syria
+  [nytimes.com] (cluster 16) A Timeline of Deadly Earthquakes in Turkey - The New York Times
+  [tagesschau.de] (cluster 16) Erdbeben in Türkei und Syrien: ++ Berichte über mehr als 180 Tote ++
+  [sueddeutsche.de] (cluster 112) Erdbeben in der Türkei und Syrien: Hunderte Tote
+  [tagesschau.de] (cluster 112) Grenzregion betroffen: Erdbeben trifft die Türkei und Syrien
+  [tagesschau.de] (cluster 73) Grenzgebiet zu Syrien : Erdbeben erschüttern Südosten der Türkei
+  [20minutes.fr] (cluster 12) C'est l'heure du BIM : Les retraites à l'Assemblée, séisme meurtrier en Syrie et Beyoncé reine des G
+  [sueddeutsche.de] (cluster 112) Erdbeben in der Türkei und Syrien: Hunderte Tote - Lage ist "tragisch"
+  [nytimes.com] (cluster 16) How strong is a magnitude-7.8 quake?
+  [nytimes.com] (cluster 16) The earthquake struck war-scarred northern Syria.
+  [nytimes.com] (cluster 16) Live Updates: Earthquake Kills More Than 500 in Turkey and Syria
+  [usatoday.com] (cluster 16) Deadly 7.8 magnitude quake hits Turkey-Syria border; death toll climbs
+  [faz.net] (cluster 112) Erdbeben in der Türkei und in Syrien: Mehr als 600 Menschen gestorben
+  [spiegel.de] (cluster 16) Ukraine verspricht »notwendige Hilfe« nach Erdbeben
+  [foxnews.com] (cluster 16) More than 640 people dead in Turkey, Syria after 7.8 magnitude earthquake
+
+-- first article per country in cluster (hours after event start, source, title) --
+  BR -2h [uol.com.br] Dominatrix Mel Fire inaugura estúdio para fãs (discretos) de fetiches em SP
+  JP +4h [asahi.com] ボルボとインテリアデザイン　インスピレーションの源泉 | 朝日新聞デジタルマガジン＆[and]
+  DE +7h [faz.net] Faeser nimmt die Grünen in den Blick
+  US +7h [latimes.com] México y Venezuela lideran la Serie del Caribe
+  FR +10h [20minutes.fr] EDF devra vendre plus d'électricité nucléaire à ses concurrents, la justice confirme
+
+-- cluster articles per country per hour after event start (first 36h) --
+shape: (36, 6)
+┌─────────────┬─────┬─────┬─────┬─────┬─────┐
+│ hours_after ┆ US  ┆ FR  ┆ DE  ┆ JP  ┆ BR  │
+│ ---         ┆ --- ┆ --- ┆ --- ┆ --- ┆ --- │
+│ i32         ┆ u32 ┆ u32 ┆ u32 ┆ u32 ┆ u32 │
+╞═════════════╪═════╪═════╪═════╪═════╪═════╡
+│ 0           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 11  │
+│ 1           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 3   │
+│ 2           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 1   │
+│ 3           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 5   │
+│ 4           ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 2   │
+│ 5           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 2   │
+│ 6           ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 6   │
+│ 7           ┆ 2   ┆ 0   ┆ 1   ┆ 0   ┆ 1   │
+│ 8           ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 15  │
+│ 9           ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 9   │
+│ 10          ┆ 1   ┆ 1   ┆ 1   ┆ 0   ┆ 19  │
+│ 11          ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 18  │
+│ 12          ┆ 1   ┆ 2   ┆ 0   ┆ 0   ┆ 21  │
+│ 13          ┆ 0   ┆ 1   ┆ 0   ┆ 0   ┆ 42  │
+│ 14          ┆ 1   ┆ 1   ┆ 1   ┆ 0   ┆ 30  │
+│ 15          ┆ 0   ┆ 3   ┆ 0   ┆ 0   ┆ 19  │
+│ 16          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 8   │
+│ 17          ┆ 1   ┆ 0   ┆ 0   ┆ 0   ┆ 30  │
+│ 18          ┆ 0   ┆ 0   ┆ 2   ┆ 0   ┆ 18  │
+│ 19          ┆ 1   ┆ 2   ┆ 0   ┆ 0   ┆ 24  │
+│ 20          ┆ 1   ┆ 0   ┆ 0   ┆ 1   ┆ 23  │
+│ 21          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 13  │
+│ 22          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 24  │
+│ 23          ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 15  │
+│ 24          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 8   │
+│ 25          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 3   │
+│ 26          ┆ 0   ┆ 1   ┆ 0   ┆ 0   ┆ 1   │
+│ 27          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 3   │
+│ 28          ┆ 0   ┆ 2   ┆ 0   ┆ 1   ┆ 0   │
+│ 29          ┆ 1   ┆ 1   ┆ 0   ┆ 0   ┆ 0   │
+│ 30          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 14  │
+│ 31          ┆ 2   ┆ 1   ┆ 0   ┆ 0   ┆ 8   │
+│ 32          ┆ 0   ┆ 2   ┆ 0   ┆ 2   ┆ 8   │
+│ 33          ┆ 1   ┆ 2   ┆ 0   ┆ 0   ┆ 17  │
+│ 34          ┆ 0   ┆ 0   ┆ 0   ┆ 1   ┆ 14  │
+│ 35          ┆ 0   ┆ 0   ┆ 0   ┆ 0   ┆ 13  │
+└─────────────┴─────┴─────┴─────┴─────┴─────┘

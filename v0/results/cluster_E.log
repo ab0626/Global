@@ -1,0 +1,122 @@
+30482 articles x 5899 entity terms (types=E, max_df=0.5)
+threshold 0.3: 11932 edges
+threshold 0.4: 9926 edges
+threshold 0.5: 8362 edges
+
+=== event cluster by config (purity = share of cluster URLs mentioning notre-dame; recall = share of all notre-dame URLs captured) ===
+config                 clusters   size  purity  recall  countries / languages
+t=0.3 components          26281    617    0.40    0.12  {'BR': 220, 'DE': 33, 'FR': 28, 'JP': 28, 'US': 308} / {'eng': 330, 'por': 220, 'deu': 33, 'fra': 28, 'spa': 6}
+t=0.3 leiden r=0.5        26298    238    0.83    0.10  {'BR': 81, 'DE': 22, 'FR': 19, 'JP': 9, 'US': 107} / {'eng': 111, 'por': 81, 'deu': 22, 'fra': 19, 'spa': 5}
+t=0.3 leiden r=1.0        26306    164    0.82    0.07  {'BR': 50, 'DE': 14, 'FR': 14, 'JP': 6, 'US': 80} / {'eng': 81, 'por': 50, 'fra': 14, 'deu': 14, 'spa': 5}
+t=0.3 leiden r=2.0        26312     98    0.76    0.04  {'BR': 24, 'DE': 7, 'FR': 7, 'JP': 5, 'US': 55} / {'eng': 57, 'por': 24, 'deu': 7, 'fra': 7, 'ara': 2, 'spa': 1}
+t=0.4 components          26475    478    0.42    0.10  {'BR': 190, 'DE': 23, 'FR': 22, 'JP': 21, 'US': 222} / {'eng': 237, 'por': 190, 'deu': 23, 'fra': 22, 'spa': 6}
+t=0.4 leiden r=0.5        26483    156    0.85    0.06  {'BR': 55, 'DE': 14, 'FR': 13, 'JP': 5, 'US': 69} / {'eng': 69, 'por': 55, 'deu': 14, 'fra': 13, 'spa': 5}
+t=0.4 leiden r=1.0        26489     97    0.84    0.04  {'BR': 33, 'DE': 3, 'FR': 8, 'JP': 4, 'US': 49} / {'eng': 49, 'por': 33, 'fra': 8, 'spa': 4, 'deu': 3}
+t=0.4 leiden r=2.0        26498     79    0.84    0.03  {'BR': 16, 'DE': 5, 'FR': 5, 'JP': 3, 'US': 50} / {'eng': 50, 'por': 16, 'fra': 5, 'deu': 5, 'ara': 2, 'spa': 1}
+t=0.5 components          26781    118    0.86    0.05  {'BR': 48, 'DE': 11, 'FR': 12, 'JP': 2, 'US': 45} / {'por': 48, 'eng': 44, 'fra': 12, 'deu': 11, 'spa': 3}
+t=0.5 leiden r=0.5        26785     79    0.92    0.04  {'BR': 36, 'DE': 9, 'FR': 8, 'US': 26} / {'por': 36, 'eng': 24, 'deu': 9, 'fra': 8, 'spa': 2}
+t=0.5 leiden r=1.0        26788     61    0.95    0.03  {'BR': 28, 'DE': 8, 'FR': 5, 'US': 20} / {'por': 28, 'eng': 19, 'deu': 8, 'fra': 5, 'spa': 1}
+t=0.5 leiden r=2.0        26791     60    0.83    0.02  {'BR': 13, 'DE': 5, 'FR': 3, 'JP': 3, 'US': 36} / {'eng': 36, 'por': 13, 'deu': 5, 'fra': 3, 'ara': 2, 'spa': 1}
+
+=== detail for t=0.3 leiden r=0.5: event cluster 8319 ===
+top terms: E:838626938, E:838626935, E:838626927, E:838626940, E:838627263, E:838626951, E:838642922, E:838627894, E:838648644, E:838632999, E:838626931, E:838626934
+
+-- where each country's notre-dame URLs landed (cluster: count, top terms) --
+  US:
+    cluster 8319:   94  size   238  E:838626938, E:838626935, E:838626927, E:838626940, E:838627263, E:838626951, E:838642922, E:838627894
+    cluster 265:   47  size   120  E:838451189, E:838567943, E:838567944, E:838383506, E:838410009, E:838462181, E:838382807, E:838573601
+    cluster 17295:   42  size   102  E:838887513, E:838894045, E:838887489, E:838887511, E:838917170, E:838887510, E:838894054, E:838887520
+    cluster 9257:    6  size    14  E:838630974, E:838824899, E:838819594, E:838827957, E:838827938, E:838653985, E:838644234, E:838641260
+  FR:
+    cluster 8319:   13  size   238  E:838626938, E:838626935, E:838626927, E:838626940, E:838627263, E:838626951, E:838642922, E:838627894
+    cluster 8384:    6  size    10  E:838636395, E:838643045, E:838692943, E:839140704, E:839141359, E:839141450, E:839143941, E:839144161
+    cluster 265:    6  size   120  E:838451189, E:838567943, E:838567944, E:838383506, E:838410009, E:838462181, E:838382807, E:838573601
+    cluster 19233:    5  size     5  E:838954602, E:838947608, E:838887730, E:839140704, E:839141359, E:839141450, E:839143941, E:839144161
+  DE:
+    cluster 8319:   19  size   238  E:838626938, E:838626935, E:838626927, E:838626940, E:838627263, E:838626951, E:838642922, E:838627894
+    cluster 9503:   12  size    19  E:838633364, E:838710805, E:838737455, E:838759824, E:838759823, E:838775706, E:838775705, E:838658815
+    cluster 18295:    6  size     7  E:838941070, E:839140704, E:839141359, E:839141450, E:839143941, E:839144161, E:839144227, E:839144307
+    cluster 6206:    5  size     8  E:838457626, E:838389450, E:838488242, E:838488689, E:838616878, E:838457801, E:838587246, E:838586899
+  JP:
+    cluster 17295:    4  size   102  E:838887513, E:838894045, E:838887489, E:838887511, E:838917170, E:838887510, E:838894054, E:838887520
+    cluster 8319:    3  size   238  E:838626938, E:838626935, E:838626927, E:838626940, E:838627263, E:838626951, E:838642922, E:838627894
+    cluster 9622:    1  size    10  E:838626682, E:838627313, E:838627025, E:838627166, E:838643627, E:838836627, E:838836628, E:838630968
+    cluster 9515:    1  size     2  E:838681039, E:838681041, E:838681048, E:838681049, E:838681050, E:838681051, E:838681052, E:839140704
+  BR:
+    cluster 8319:   69  size   238  E:838626938, E:838626935, E:838626927, E:838626940, E:838627263, E:838626951, E:838642922, E:838627894
+    cluster 265:   37  size   120  E:838451189, E:838567943, E:838567944, E:838383506, E:838410009, E:838462181, E:838382807, E:838573601
+    cluster 8467:   17  size    18  E:838632986, E:838632982, E:838762845, E:838731720, E:838712303, E:838627263, E:838648523, E:838627025
+    cluster 17295:   11  size   102  E:838887513, E:838894045, E:838887489, E:838887511, E:838917170, E:838887510, E:838894054, E:838887520
+
+-- possible contamination: in cluster, URL does not mention notre-dame (up to 30) --
+  [washingtonpost.com] lks-new-tax-credit-plan-during-iowa-visit/2019/04/15/8daf87c0-5fe4-11e9-bf24-db4b9fb62aa2_story.html
+  [nbcnews.com] rst-ever-black-hole-photo-gives-humanity-long-anticipated-glimpse-ncna992111?cid=public-rss_20190416
+  [nbcnews.com] om/mach/science/black-hole-picture-could-unlock-new-era-astronomy-ncna993531?cid=public-rss_20190416
+  [apnews.com] https://apnews.com/7538fdb8fc8b476b8c442f0c2ac52115
+  [nbcnews.com] ews.com/business/autos/your-next-car-may-not-allow-you-speed-highway-n992606?cid=public-rss_20190416
+  [globo.com] https://oglobo.globo.com/opiniao/o-dilema-da-responsabilidade-23601277
+  [japantimes.co.jp] https://www.japantimes.co.jp/?post_type=news&p=1885010
+  [liberation.fr] https://www.liberation.fr/direct/element/_96477/
+  [lemonde.fr] /lancement-imminent-des-negociations-commerciales-entre-l-europe-et-les-etats-unis_5450841_3234.html
+  [asahi.com] http://www.asahi.com/ajw/articles/AJ201904160058.html
+  [20minutes.fr] 0190416-incendie-dame-accident-attentat-parisiens-veulent-savoir-passe-reclame-nicolas-dupont-aignan
+  [globo.com] sil/o-essencial-da-manha-governo-anunciara-credito-obras-para-evitar-greve-de-caminhoneiros-23602662
+  [uol.com.br] ria-de-quasimodo-e-porque-o-personagem-criado-por-victor-hugo-virou-simbolo-da-catedral-de-paris.htm
+  [mainichi.jp] https://mainichi.jp/english/articles/20190416/p2g/00m/0fp/058000c
+  [uol.com.br] .com.br/jornalismo/mundo/bombeiros-garantem-que-estrutura-foi-salva-apos-incendio-na-catedral-de-not
+  [washingtonpost.com] s://www.washingtonpost.com/world/2019/04/16/world-health-organization-says-measles-cases-up-percent/
+  [francetvinfo.fr] https://www.francetvinfo.fr/live/message/5cb/5cb/b45/ff4/e93/6a3/f00/b5a.html
+  [n-tv.de] w.n-tv.de/panorama/14-59-Britische-Abgeordnete-fuerchten-aehnliche-Katastrophe--article20970422.html
+  [globo.com] onomia/policia-britanica-prende-113-ambientalistas-por-bloqueio-de-avenidas-de-londres-23602920.html
+  [terra.com.br] 113-ambientalistas-por-bloqueio-de-avenidas-de-londres,1886c92cc143a9bf5a433151e357d57fnxrj9v9p.html
+  [uol.com.br] uters/2019/04/16/policia-britanica-prende-113-ambientalistas-por-bloqueio-de-avenidas-de-londres.htm
+  [uol.com.br] ria-de-quasimodo-e-porque-o-personagem-criado-por-victor-hugo-virou-simbolo-da-catedral-de-paris.htm
+  [globo.com] cia/2019/04/16/laudo-psiquiatrico-descarta-insanidade-mental-de-acusado-de-matar-aretha-dantas.ghtml
+  [nytimes.com] https://www.nytimes.com/2019/04/16/movies/claire-denis-barry-jenkins.html
+  [spiegel.de] //www.spiegel.de/einestages/chaim-rumkowskis-rede-im-ghetto-lodz-gebt-mir-eure-kinder-a-1189369.html
+  [japantimes.co.jp] https://www.japantimes.co.jp/?post_type=news&p=1886203
+  [zeit.de] e/politik/ausland/2019-04/gelbwesten-frankreich-emmanuel-macron-steuersenkungen-entlastungen-rentner
+  [foxnews.com] ws.com/2019/04/16/ken-starr-attorney-general-william-barr-release-mueller-report-alleged-obstruction
+  [nytimes.com] https://www.nytimes.com/2019/04/16/business/nissan-renault-alliance-ghosn.html
+  [japantimes.co.jp] https://www.japantimes.co.jp/?post_type=news&p=1886296
+
+-- first article per country in cluster (hours after fire start, source, url) --
+  DE +7h [zeit.de] .de/gesellschaft/zeitgeschehen/2019-04/frankfreich-paris-notre-dame-feuer-kathedrale-brand
+  US +7h [cnn.com] 5/por-que-la-catedral-de-notre-dame-es-tan-importante-para-los-catolicos-de-todo-el-mundo/
+  BR +7h [uol.com.br] 19/04/15/catedral-notre-dame-de-paris-ja-foi-celebrada-e-menosprezada-diz-historiadora.htm
+  FR +9h [bfmtv.com] otre-dame-de-paris-les-unes-de-la-presse-rendent-hommage-au-monument-parisien-1673955.html
+  JP +10h [japantimes.co.jp] 019/04/16/world/youtube-flags-notre-dame-fire-9-11-conspiracy-says-system-made-wrong-call/
+
+-- cluster articles per country per hour after fire start (first 36h) --
+shape: (25, 6)
+┌─────────────┬─────┬─────┬─────┬─────┬─────┐
+│ hours_after ┆ US  ┆ FR  ┆ DE  ┆ JP  ┆ BR  │
+│ ---         ┆ --- ┆ --- ┆ --- ┆ --- ┆ --- │
+│ i32         ┆ u32 ┆ u32 ┆ u32 ┆ u32 ┆ u32 │
+╞═════════════╪═════╪═════╪═════╪═════╪═════╡
+│ 7           ┆ 1   ┆ 0   ┆ 2   ┆ 0   ┆ 1   │
+│ 8           ┆ 9   ┆ 0   ┆ 0   ┆ 0   ┆ 3   │
+│ 9           ┆ 6   ┆ 1   ┆ 1   ┆ 0   ┆ 5   │
+│ 10          ┆ 4   ┆ 0   ┆ 4   ┆ 1   ┆ 1   │
+│ 11          ┆ 3   ┆ 0   ┆ 0   ┆ 1   ┆ 1   │
+│ 12          ┆ 3   ┆ 1   ┆ 0   ┆ 1   ┆ 0   │
+│ 13          ┆ 3   ┆ 2   ┆ 1   ┆ 0   ┆ 1   │
+│ 14          ┆ 2   ┆ 0   ┆ 0   ┆ 0   ┆ 0   │
+│ 15          ┆ 0   ┆ 0   ┆ 1   ┆ 0   ┆ 1   │
+│ 16          ┆ 0   ┆ 1   ┆ 3   ┆ 0   ┆ 0   │
+│ 17          ┆ 0   ┆ 1   ┆ 2   ┆ 0   ┆ 3   │
+│ 18          ┆ 5   ┆ 1   ┆ 1   ┆ 1   ┆ 2   │
+│ 19          ┆ 4   ┆ 3   ┆ 0   ┆ 1   ┆ 9   │
+│ 20          ┆ 3   ┆ 1   ┆ 2   ┆ 0   ┆ 7   │
+│ 21          ┆ 3   ┆ 0   ┆ 0   ┆ 0   ┆ 11  │
+│ 22          ┆ 7   ┆ 1   ┆ 0   ┆ 1   ┆ 5   │
+│ 23          ┆ 7   ┆ 0   ┆ 2   ┆ 1   ┆ 5   │
+│ 24          ┆ 8   ┆ 2   ┆ 1   ┆ 0   ┆ 5   │
+│ 25          ┆ 16  ┆ 0   ┆ 1   ┆ 0   ┆ 1   │
+│ 26          ┆ 3   ┆ 1   ┆ 0   ┆ 1   ┆ 6   │
+│ 27          ┆ 6   ┆ 2   ┆ 0   ┆ 0   ┆ 4   │
+│ 28          ┆ 5   ┆ 1   ┆ 0   ┆ 0   ┆ 7   │
+│ 29          ┆ 3   ┆ 0   ┆ 1   ┆ 0   ┆ 2   │
+│ 30          ┆ 4   ┆ 1   ┆ 0   ┆ 1   ┆ 1   │
+│ 31          ┆ 2   ┆ 0   ┆ 0   ┆ 0   ┆ 0   │
+└─────────────┴─────┴─────┴─────┴─────┴─────┘

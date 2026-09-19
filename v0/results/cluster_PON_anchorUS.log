@@ -1,0 +1,132 @@
+30482 articles x 46042 entity terms (types=PON, max_df=0.5)
+threshold 0.3: 456537 edges
+threshold 0.4: 228867 edges
+threshold 0.5: 119308 edges
+
+=== event cluster by config (purity = share of cluster URLs mentioning notre-dame; recall = share of all notre-dame URLs captured) ===
+config                 clusters   size  purity  recall  countries / languages
+t=0.3 components           3863  23591    0.07    0.84  {'BR': 9841, 'DE': 3117, 'FR': 3259, 'JP': 2153, 'US': 5221} / {'por': 9839, 'eng': 5622, 'fra': 3257, 'deu': 3114, 'jpn': 1588, 'spa': 99, 'ara': 68, 'zho': 3, 'tur': 1}
+t=0.3 leiden r=0.5         3960    689    0.52    0.17  {'DE': 18, 'FR': 24, 'JP': 120, 'US': 527} / {'eng': 521, 'jpn': 97, 'fra': 24, 'deu': 17, 'ara': 16, 'spa': 14}
+t=0.3 leiden r=1.0         3965    586    0.61    0.17  {'DE': 17, 'FR': 22, 'JP': 105, 'US': 442} / {'eng': 435, 'jpn': 83, 'fra': 22, 'ara': 16, 'deu': 16, 'spa': 14}
+t=0.3 leiden r=2.0         3999    498    0.66    0.16  {'BR': 1, 'DE': 2, 'FR': 6, 'JP': 96, 'US': 393} / {'eng': 383, 'jpn': 78, 'ara': 15, 'spa': 14, 'fra': 6, 'por': 1, 'deu': 1}
+t=0.4 components           6855  17888    0.08    0.69  {'BR': 8554, 'DE': 1280, 'FR': 2820, 'JP': 1608, 'US': 3626} / {'por': 8552, 'eng': 3909, 'fra': 2819, 'deu': 1279, 'jpn': 1188, 'spa': 82, 'ara': 58, 'zho': 1}
+t=0.4 leiden r=0.5         6941    575    0.55    0.15  {'DE': 7, 'FR': 10, 'JP': 110, 'US': 448} / {'eng': 438, 'jpn': 91, 'spa': 15, 'ara': 15, 'fra': 10, 'deu': 6}
+t=0.4 leiden r=1.0         6963    571    0.55    0.15  {'DE': 7, 'FR': 10, 'JP': 110, 'US': 444} / {'eng': 434, 'jpn': 91, 'ara': 15, 'spa': 15, 'fra': 10, 'deu': 6}
+t=0.4 leiden r=2.0         6989    432    0.67    0.14  {'DE': 2, 'FR': 4, 'JP': 93, 'US': 333} / {'eng': 319, 'jpn': 80, 'ara': 14, 'spa': 14, 'fra': 4, 'deu': 1}
+t=0.5 components          10736  10944    0.09    0.46  {'BR': 6170, 'DE': 210, 'FR': 1902, 'JP': 907, 'US': 1755} / {'por': 6168, 'fra': 1902, 'eng': 1838, 'jpn': 729, 'deu': 209, 'spa': 55, 'ara': 42, 'zho': 1}
+t=0.5 leiden r=0.5        10809    532    0.46    0.12  {'DE': 6, 'FR': 7, 'JP': 100, 'US': 419} / {'eng': 412, 'jpn': 86, 'ara': 12, 'spa': 10, 'fra': 7, 'deu': 5}
+t=0.5 leiden r=1.0        10840    400    0.59    0.11  {'DE': 4, 'FR': 6, 'JP': 80, 'US': 310} / {'eng': 298, 'jpn': 71, 'ara': 12, 'spa': 10, 'fra': 6, 'deu': 3}
+t=0.5 leiden r=2.0        10870    350    0.66    0.11  {'DE': 4, 'FR': 2, 'JP': 75, 'US': 269} / {'eng': 252, 'jpn': 71, 'ara': 12, 'spa': 10, 'deu': 3, 'fra': 2}
+
+=== detail for t=0.3 leiden r=0.5: event cluster 4 ===
+top terms: P:Notre Dame, N:Notre Dame, N:Notre Dame Cathedral, O:Youtube, O:Twitter, O:Cnn, O:Columbine High School, N:President Emmanuel Macron, O:Associated Press, N:Columbine High School, P:Victor Hugo, N:Victor Hugo
+
+-- where each country's notre-dame URLs landed (cluster: count, top terms) --
+  US:
+    cluster 4:  328  size   689  P:Notre Dame, N:Notre Dame, N:Notre Dame Cathedral, O:Youtube, O:Twitter, O:Cnn, O:Columbine High School, N:President Emmanuel Macron
+    cluster 0:   18  size  2871  O:Associated Press, O:Cnn, O:Facebook, N:New York, P:Donald Trump, O:Twitter, O:White House, P:Los Angeles
+    cluster 6:   12  size  2788  N:Emmanuel Macron, N:Monday April, O:Philippe, N:Her East, P:Our Lady, N:Tuesday April, P:Edward Philippe, N:Notre-Dame Betting
+    cluster 1:   11  size  1681  O:United States, N:United States, N:Business Wire, N:Saudi Arabia, N:North Korea, N:New York, P:Donald Trump, O:European Union
+  FR:
+    cluster 6:  622  size  2788  N:Emmanuel Macron, N:Monday April, O:Philippe, N:Her East, P:Our Lady, N:Tuesday April, P:Edward Philippe, N:Notre-Dame Betting
+    cluster 1:   19  size  1681  O:United States, N:United States, N:Business Wire, N:Saudi Arabia, N:North Korea, N:New York, P:Donald Trump, O:European Union
+    cluster 4:   14  size   689  P:Notre Dame, N:Notre Dame, N:Notre Dame Cathedral, O:Youtube, O:Twitter, O:Cnn, O:Columbine High School, N:President Emmanuel Macron
+    cluster 5:   13  size  2259  N:States Attached, N:Goggle Box, N:United Kingdom, N:Union European, O:Union European, O:Boeing, N:Kingdom Attached, N:Web Site
+  DE:
+    cluster 16:  119  size  1103  N:Dpa News Channel, O:S Police, N:Read They, N:District Court, O:District Court, N:Monday Night, N:Federal Government, O:Parisian
+    cluster 11:   26  size   442  P:Victor Hugo, N:Victor Hugo, O:A Museum, N:Their Cathedral, N:Museum National, O:Museum National, N:Natural History, N:One Fire
+    cluster 18:   12  size   543  O:Public Prosecutor Office, O:Police On, N:Public Prosecutor Office, O:Nissan, N:Tuesday Evening, O:Toyota, N:Well Known, O:Prosecutor Office
+    cluster 1667:   12  size    12  N:Sender Rmc, N:Damaged Cathedral, N:Billion Euros, N:State Emmanuel Macron, N:Brigade To Continue, N:Architects Wanted, N:Monday Night, N:French Pinault
+  JP:
+    cluster 4:    9  size   689  P:Notre Dame, N:Notre Dame, N:Notre Dame Cathedral, O:Youtube, O:Twitter, O:Cnn, O:Columbine High School, N:President Emmanuel Macron
+    cluster 2648:    1  size     2  O:French Council Of The Muslim Faith, N:French Council, N:French Muslims, N:New York-based French Heritage Society, N:Muslim Faith, O:French Heritage Society, O:French Heritage Foundation, N:French Heritage Foundation
+    cluster 99:    1  size   302  O:Qualcomm, O:Huawei, O:Samsung, N:South Korean, O:Intel, O:Ericsson, O:Champions League, N:Champions League
+    cluster 2558:    1  size     2  P:Philippe Marsset, N:Philippe Marsset, N:French King Louis, N:France Inter, N:Notre-Dame Cathedral Tuesday, N:Eric Fischer, P:Eric Fischer, N:Minister Franck Riester
+  BR:
+    cluster 11:  200  size   442  P:Victor Hugo, N:Victor Hugo, O:A Museum, N:Their Cathedral, N:Museum National, O:Museum National, N:Natural History, N:One Fire
+    cluster 5:   59  size  2259  N:States Attached, N:Goggle Box, N:United Kingdom, N:Union European, O:Union European, O:Boeing, N:Kingdom Attached, N:Web Site
+    cluster 44:   52  size  1348  O:Reuters, P:Felipe Francischini, N:Reuters Size, N:Reuters Reuters This, P:Marcelo Freitas, N:States Attached, N:Rodrigo Mayan, N:Marcelo Freitas
+    cluster 10:   46  size  4131  N:Sao Paulo, N:Military Police, N:Police Civilian, N:Fire Station, N:Police Station, N:Week Saint, O:Young, O:Their Police
+
+-- possible contamination: in cluster, URL does not mention notre-dame (up to 30) --
+  [nytimes.com] https://www.nytimes.com/2019/04/14/nyregion/fordham-student-falls-sydney-monfries.html
+  [nbcnews.com] s/us-news/fordham-student-critically-injured-fall-campus-clock-tower-n994331?cid=public-rss_20190415
+  [nbcnews.com] ews/world/steve-bannon-u-s-ultra-conservatives-take-aim-pope-francis-n991411?cid=public-rss_20190415
+  [nbcnews.com] red-pope-benedict-blames-sexual-revolution-church-laws-abuse-scandal-n993416?cid=public-rss_20190415
+  [nbcnews.com] cnews.com/tech/security/thousands-identities-personal-information-published-fbi-related-hack-n994366
+  [evene.lefigaro.fr] http://evene.lefigaro.fr/celebre/biographie/leonard-de-vinci-13.php
+  [nbcnews.com] ww.nbcnews.com/news/us-news/fordham-university-student-dies-after-falling-campus-clock-tower-n994376
+  [nbcnews.com] es-outbreak-nyc-threatens-closing-yeshivas-let-unvaccinated-students-n992261?cid=public-rss_20190415
+  [nbcnews.com] tch-boston-dynamics-birdlike-robots-stack-boxes-nobody-s-business-ncna988916?cid=public-rss_20190415
+  [nbcnews.com] thousands-identities-personal-information-published-fbi-related-hack-n994366?cid=public-rss_20190415
+  [nbcnews.com] /first-picture-black-hole-made-katie-bouman-overnight-celebrity-then-n994081?cid=public-rss_20190415
+  [nbcnews.com] speech-hits-youtube-livestreams-house-hearing-rise-white-nationalism-n992386?cid=public-rss_20190415
+  [nbcnews.com] ews/fordham-university-student-dies-after-falling-campus-clock-tower-n994376?cid=public-rss_20190415
+  [washingtonpost.com] rtainment/2019/04/12/marques-brownlee-is-one-biggest-voices-consumer-tech-even-will-smith-knows-him/
+  [nikkei.com] https://www.nikkei.com/article/DGXMZO43729750V10C19A4XY0000/
+  [washingtonpost.com] -visit-to-minnesota-to-tout-2017-tax-cuts/2019/04/15/26378d38-5f33-11e9-bf24-db4b9fb62aa2_story.html
+  [foxnews.com] https://www.foxnews.com/us/bond-hearing-for-white-suspect-in-black-church-fires
+  [washingtonpost.com] g-for-white-suspect-in-black-church-fires/2019/04/15/02cfbf44-5f3f-11e9-bf24-db4b9fb62aa2_story.html
+  [washingtonpost.com] brexit-delay-is-a-bond-market-opportunity/2019/04/15/210889ee-5f3c-11e9-bf24-db4b9fb62aa2_story.html
+  [asahi.com] https://www.asahi.com/articles/ASM4961QVM49PTFC01P.html
+  [washingtonpost.com] gtonpost.com/outlook/2019/04/15/impeachment-should-be-no-brainer-no-matter-what-mueller-report-says/
+  [cnn.com] https://arabic.cnn.com/middle-east/article/2019/04/15/iran-khaminei-arab-leaders-palestinians
+  [washingtonpost.com] -remold-internet-with-new-copyright-rules/2019/04/15/139709c6-5f68-11e9-bf24-db4b9fb62aa2_story.html
+  [washingtonpost.com] abs-the-last-partner-at-the-digital-dance/2019/04/15/a29cd37a-5f64-11e9-bf24-db4b9fb62aa2_story.html
+  [usatoday.com] tory/news/nation/2019/04/15/fordham-university-student-dies-after-falling-clock-tower-ny/3470498002/
+  [apnews.com] https://apnews.com/Globe%20Newswire/a4ce34cff676609d35b8fbfdd3256794
+  [nbcnews.com] ews/morning-briefing/tiger-victorious-deadly-storm-claims-lives-game-thrones-returns-morning-n994446
+  [usatoday.com] s://www.usatoday.com/story/news/nation/2019/04/15/louisiana-churches-fires-unity-service/3470544002/
+  [usatoday.com] /world/2019/04/15/eu-stricter-internet-copyright-rules-approved-but-controversial-europe/3470683002/
+  [washingtonpost.com] https://www.washingtonpost.com/opinions/2019/04/15/organized-religion-is-paying-price/
+
+-- first article per country in cluster (hours after fire start, source, url) --
+  US -17h [nytimes.com] https://www.nytimes.com/2019/04/14/nyregion/fordham-student-falls-sydney-monfries.html
+  FR -15h [evene.lefigaro.fr] http://evene.lefigaro.fr/celebre/biographie/leonard-de-vinci-13.php
+  JP -11h [nikkei.com] https://www.nikkei.com/article/DGXMZO43729750V10C19A4XY0000/
+  DE +1h [bild.de] uell/bruchkoebel-ex-priester-unsere-liebe-ist-staerker-als-das-zoelibat-61258434.bild.html
+
+-- cluster articles per country per hour after fire start (first 36h) --
+shape: (36, 5)
+┌─────────────┬─────┬─────┬─────┬─────┐
+│ hours_after ┆ US  ┆ FR  ┆ DE  ┆ JP  │
+│ ---         ┆ --- ┆ --- ┆ --- ┆ --- │
+│ i32         ┆ u32 ┆ u32 ┆ u32 ┆ u32 │
+╞═════════════╪═════╪═════╪═════╪═════╡
+│ 0           ┆ 2   ┆ 0   ┆ 0   ┆ 0   │
+│ 1           ┆ 9   ┆ 1   ┆ 1   ┆ 0   │
+│ 2           ┆ 15  ┆ 0   ┆ 0   ┆ 0   │
+│ 3           ┆ 9   ┆ 1   ┆ 1   ┆ 1   │
+│ 4           ┆ 14  ┆ 0   ┆ 0   ┆ 0   │
+│ 5           ┆ 16  ┆ 0   ┆ 0   ┆ 3   │
+│ 6           ┆ 23  ┆ 0   ┆ 1   ┆ 0   │
+│ 7           ┆ 8   ┆ 1   ┆ 0   ┆ 0   │
+│ 8           ┆ 17  ┆ 0   ┆ 0   ┆ 3   │
+│ 9           ┆ 13  ┆ 0   ┆ 0   ┆ 3   │
+│ 10          ┆ 9   ┆ 0   ┆ 0   ┆ 5   │
+│ 11          ┆ 7   ┆ 0   ┆ 2   ┆ 2   │
+│ 12          ┆ 7   ┆ 0   ┆ 1   ┆ 2   │
+│ 13          ┆ 4   ┆ 0   ┆ 0   ┆ 4   │
+│ 14          ┆ 4   ┆ 1   ┆ 0   ┆ 3   │
+│ 15          ┆ 3   ┆ 2   ┆ 0   ┆ 6   │
+│ 16          ┆ 3   ┆ 0   ┆ 2   ┆ 4   │
+│ 17          ┆ 2   ┆ 0   ┆ 1   ┆ 2   │
+│ 18          ┆ 7   ┆ 1   ┆ 0   ┆ 4   │
+│ 19          ┆ 9   ┆ 0   ┆ 0   ┆ 4   │
+│ 20          ┆ 10  ┆ 2   ┆ 0   ┆ 4   │
+│ 21          ┆ 14  ┆ 0   ┆ 0   ┆ 4   │
+│ 22          ┆ 13  ┆ 0   ┆ 0   ┆ 5   │
+│ 23          ┆ 7   ┆ 1   ┆ 0   ┆ 3   │
+│ 24          ┆ 18  ┆ 0   ┆ 1   ┆ 2   │
+│ 25          ┆ 28  ┆ 0   ┆ 0   ┆ 1   │
+│ 26          ┆ 14  ┆ 0   ┆ 0   ┆ 1   │
+│ 27          ┆ 9   ┆ 0   ┆ 0   ┆ 0   │
+│ 28          ┆ 12  ┆ 0   ┆ 0   ┆ 4   │
+│ 29          ┆ 10  ┆ 0   ┆ 0   ┆ 3   │
+│ 30          ┆ 8   ┆ 1   ┆ 0   ┆ 2   │
+│ 31          ┆ 5   ┆ 0   ┆ 1   ┆ 0   │
+│ 32          ┆ 35  ┆ 0   ┆ 1   ┆ 2   │
+│ 33          ┆ 0   ┆ 1   ┆ 0   ┆ 7   │
+│ 34          ┆ 5   ┆ 0   ┆ 1   ┆ 3   │
+│ 35          ┆ 4   ┆ 1   ┆ 0   ┆ 1   │
+└─────────────┴─────┴─────┴─────┴─────┘

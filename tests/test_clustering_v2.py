@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import numpy as np
 import polars as pl
@@ -75,7 +75,7 @@ def test_label_rows_prefix_actor_and_geo_and_skip_missing() -> None:
     articles = pl.DataFrame(
         {
             "canonical_id": pl.Series([0, 1], dtype=pl.UInt32),
-            "first_seen": [datetime(2019, 3, 10, tzinfo=timezone.utc)] * 2,
+            "first_seen": [datetime(2019, 3, 10, tzinfo=UTC)] * 2,
         }
     )
     rows = label_rows(incidence, labels, nodes, articles)
