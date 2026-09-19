@@ -496,11 +496,14 @@ def cluster_sizes(members: pl.DataFrame, membership: pl.DataFrame) -> pl.DataFra
 
 
 def keyword_validation(
-    articles: pl.DataFrame, members: pl.DataFrame, sizes: pl.DataFrame
+    articles: pl.DataFrame,
+    members: pl.DataFrame,
+    sizes: pl.DataFrame,
+    stories: dict[str, str] = STORIES,
 ) -> tuple[list[dict], pl.DataFrame]:
     results = []
     distributions = []
-    for story in STORIES:
+    for story in stories:
         matches = articles.filter(pl.col(story))
         hits = members.filter(pl.col(story)).group_by("cluster").len().rename({"len": "matches"})
         distribution = (
@@ -524,7 +527,7 @@ def keyword_validation(
         results.append(
             {
                 "story": story,
-                "regex_on_decoded_url_path": STORIES[story],
+                "regex_on_decoded_url_path": stories[story],
                 "keyword_urls": matches.height,
                 "assigned_keyword_urls": assigned,
                 "unassigned_keyword_urls": matches.height - assigned,
@@ -655,11 +658,12 @@ def save_evaluation(
     method: str,
     seed: int,
     edge_count: int,
+    stories: dict[str, str] = STORIES,
 ) -> tuple[dict, list[dict], pl.DataFrame]:
     destination = output / name
     destination.mkdir()
     sizes = cluster_sizes(members, membership)
-    validation, distribution = keyword_validation(articles, members, sizes)
+    validation, distribution = keyword_validation(articles, members, sizes, stories)
     assigned = members["article_id"].n_unique()
     overlap = members.group_by("article_id").len().filter(pl.col("len") > 1).height
     best_ids = [r["best_cluster"] for r in validation]
@@ -683,8 +687,11 @@ def save_evaluation(
         "largest_fraction_canonical_articles": (
             max_count(sizes["canonical_articles"]) / articles["canonical_id"].n_unique()
         ),
-        "best_clusters_all_distinct": len(valid_ids) == 4 and len(set(valid_ids)) == 4,
-        "clusters_matching_all_four_keyword_sets": category_counts.filter(pl.col("n") == 4).height,
+        "best_clusters_all_distinct": len(valid_ids) == len(stories)
+        and len(set(valid_ids)) == len(stories),
+        "clusters_matching_all_keyword_sets": category_counts.filter(
+            pl.col("n") == len(stories)
+        ).height,
         "single_event_clusters": sizes.filter(pl.col("events") == 1).height,
         "single_canonical_article_clusters": sizes.filter(pl.col("canonical_articles") == 1).height,
         "singleton_only_assigned_urls": assigned

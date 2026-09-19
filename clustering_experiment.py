@@ -19,6 +19,7 @@ from scipy import sparse
 
 from story_clusters import (
     STOPWORDS,
+    STORIES,
     Settings,
     communities,
     evaluate,
@@ -216,6 +217,7 @@ def evaluate_articles(
     threshold: float,
     method: str,
     seed: int,
+    stories: dict[str, str] = STORIES,
 ) -> tuple[dict, list[dict], pl.DataFrame]:
     partition, edge_count = communities(nodes, pairs, metric, threshold, method, seed)
     members = partition.select("canonical_id", "cluster").join(articles, on="canonical_id")
@@ -236,6 +238,7 @@ def evaluate_articles(
         method,
         seed,
         edge_count,
+        stories,
     )
     partition.write_parquet(output / name / "canonical_clusters.parquet")
     return result
