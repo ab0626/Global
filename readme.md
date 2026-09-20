@@ -22,15 +22,15 @@ attention order, not transmission. Full write-up: [`docs/project-report.md`](doc
 
 Built at **HackMIT 2026** for the **Education track**, and submitted to the
 **Voloridge** (*"Signal in the Noise"*), **Cognition** and **Ramp** sponsor
-challenges. The educational goal: let anyone — a student, a journalist, a
-policy class — pick a real-world event and *see* how the world's media noticed
+challenges. The educational goal: let anyone, a student, a journalist, a
+policy class pick a real-world event and *see* how the world's media noticed
 it: which countries reported first, which lagged, how attention grew hour by
 hour, and, for any single article, why the system believes it belongs to that
 event. The technical goal is the Voloridge brief: find real structure in a
 large, noisy, redundant dataset and make it legible.
 
 Our dataset is [GDELT](https://www.gdeltproject.org/), which monitors news in
-65+ languages every 15 minutes — on our benchmark window ~300k documents a day,
+65+ languages every 15 minutes on our benchmark window ~300k documents a day,
 most of them syndicated copies, translations or near-duplicates of far fewer
 actual events.
 
@@ -41,7 +41,7 @@ similarity, IDF-weighted `GlobalEventID` overlap, rare URL-slug tokens, rare
 GKG persons/organisations) vote on whether two articles observe the same event,
 an evidence gate refuses to link on a single weak signal, and Constant Potts
 Model Leiden clustering resolves the surviving graph into incidents and story
-families. Articles without sufficient evidence are left unassigned by design —
+families. Articles without sufficient evidence are left unassigned by design
 *abstention over false certainty*. Every assignment is explainable per article,
 every run is deterministic, and every quality number is measured against
 labelled data.
@@ -55,7 +55,7 @@ from the one fully processed three-day window (Feb 6–8 2023: Turkey–Syria
 earthquake, Chinese balloon, State of the Union, Grammys, Ohio derailment).
 
 ```
-raw 15-min zips ─preprocess─▶ typed Parquet ─atomic─▶ documents / atomic events
+raw 15-min zips preprocess─▶ typed Parquet ─atomic─▶ documents / atomic events
   ─embed─▶ multilingual title vectors ─cluster─▶ incidents → story families
   ─materialize─▶ attention store ─FastAPI─▶ /api/v2/attention/* ─▶ R3F globe
 ```
@@ -127,7 +127,7 @@ across languages needs ≥ 0.60. CPM-Leiden (resolution 0.05, seed 2026) gives
 `incident_id = -1`.
 
 Incidents are precise but fragmented, so a second stage links them into **story
-families** by comparing aggregates only — centroid title similarity, corroborated
+families** by comparing aggregates only centroid title similarity, corroborated
 by a shared top person/organisation, a shared `GlobalEventID`, or (optional
 `geo` channel) a shared sub-country place, within a `family_max_hours` gap — and
 runs CPM-Leiden again (resolution 0.5). The document→incident gate is never
@@ -294,7 +294,7 @@ $$
 \text{attention\_ratio}(c,S) = \frac{\text{effective\_share}(c,S)}{\text{effective\_share}(\text{world},S)} .
 $$
 
-Onset is deliberately conservative — the later of the hour in which the third
+Onset is deliberately conservative the later of the hour in which the third
 distinct outlet appears and the hour in which cumulative documents reach 10 % of
 the group's total; $\text{lag}(c,S) = \text{onset}(c,S) - \text{onset}(\text{world},S)$
 in hours. All times are GDELT *observation* times, so onset/lag describe
@@ -302,8 +302,8 @@ observed media attention, not awareness or causation.
 
 **6b. Country response analytics** (`analytics.py`). Built on the materialised
 store, without touching the clustering. Each story family $E$ (default; incidents
-as drilldown) with a dominant event country $O$ — the `event_country` carrying the
-most effective reports across its incidents — is crossed with every publisher
+as drilldown) with a dominant event country $O$ the `event_country` carrying the
+most effective reports across its incidents is crossed with every publisher
 country $C$ in the baseline, so uncovered countries stay in the denominator as
 right-censored rows:
 
@@ -315,8 +315,8 @@ $$
 falling back to $\text{onset}(E,C) - \text{onset}(E,\text{world})$ (flagged
 `world_fallback`) when the origin never reached onset. Negative values are kept:
 the destination's press reached onset first. Per country, pair or matrix cell:
-coverage $= \text{covered}/\text{eligible}$ with a Wilson 95 % interval, and —
-conditional on coverage, reported separately — mean, median, P25/P75 and a
+coverage $= \text{covered}/\text{eligible}$ with a Wilson 95 % interval, and
+conditional on coverage, reported separately, mean, median, P25/P75 and a
 seeded ($2026$, 1,000 resamples) bootstrap interval on the median. Cells below
 the support gate (default ≥5 covered families, ≥15 effective reports) keep their
 counts but show no latency. Everything is observed *media* response: publisher
