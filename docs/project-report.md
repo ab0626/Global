@@ -1,8 +1,9 @@
 # Global News Event Resolution & Attention Propagation — Project Report
 
 Status as of 2026-09-20. Everything below is measured on the code in
-https://github.com/ab0626/Global (the PR chain #1 → #2 → #4 → #5, merged into
-`main`). Numbers come from `run.json`, `meta.json`, `eval/*.json` and the
+https://github.com/ab0626/Global (PRs #1 → #2 → #4 → #5 for the pipeline, globe
+and docs, #8 → #9 for country response analytics; all merged into `main`, which
+is the only branch). Numbers come from `run.json`, `meta.json`, `eval/*.json` and the
 Parquet tables of the deterministic Feb 6–8 2023 `_v5` run
 (`data/clusters/20230206_v5`, `data/store/20230206_v5`) unless another run is
 named. Where a number is an estimate or an inference rather than a measurement
@@ -22,7 +23,12 @@ real-world story, e.g. the Turkey–Syria earthquake), and **country-level
 attention** (which publisher countries covered it, when, how much relative to
 their normal output), served by a FastAPI API and visualised on a React Three
 Fiber 3D globe where publisher countries light up in observation order, with a
-per-article "why is this article in this event?" evidence panel.
+per-article "why is this article in this event?" evidence panel. On top of the
+store, a **country response analytics** layer (§4b, §6b) makes countries
+queryable the way stories are: how quickly Germany's press responds to foreign
+events, to French-origin events specifically, to its own domestic events, and
+how any set of countries compares in an origin × destination matrix — every
+number drillable to the story families that produced it.
 
 ```
 raw 15-min zips ──preprocess──▶ typed Parquet (+audit)
@@ -33,8 +39,10 @@ raw 15-min zips ──preprocess──▶ typed Parquet (+audit)
                                country_event_attention / country_event_summary /
                                sources / country_baseline / meta.json
                                + country_family_* + document_evidence
-                ──api────────▶ /search /families/{id}/spread /documents/{id}/evidence ...
-                ──web────────▶ spread.html: R3F globe, timeline, evidence panel
+                ──analytics──▶ country_response_observations (event × origin × destination)
+                ──api────────▶ /search /families/{id}/spread /documents/{id}/evidence /analytics/* ...
+                ──web────────▶ spread.html: Events tab (R3F globe, timeline, evidence panel)
+                               + Country Stats tab (overview, A↔B, matrix/heatmap, drilldown)
                 ──eval───────▶ labelled pairs/neighbourhoods → pair P/R, B³, CEAF-e → sweeps → flagship audit
 ```
 
@@ -404,6 +412,109 @@ smaller served figure for the earthquake.
 
 ---
 
+## 4b. Country response analytics (`attention/analytics.py`)
+
+Built strictly on the store above — no change to clustering, onset or the
+attention tables. `scripts/run_window.sh` runs `python -m attention.analytics
+data/store/<tag>` after materialisation and writes
+`country_response_observations.parquet`; the API derives it on first use if the
+file is missing.
+
+**Observation unit.** One row per `level × event × origin_country ×
+destination_country`, at two levels: **family** (default — one story family is
+one analytical observation, so the earthquake cannot contribute hundreds of
+correlated incident rows) and **incident** (drilldown). The origin country $O$ of
+an event is the `event_country` carrying the most effective reports across its
+incidents (`origin_share` is recorded; 98 % of families with an origin exceed
+0.5). Events with no `event_country` (680 of 4,518 macro-events) have no origin
+and are excluded from analytics, not silently folded in. Every eligible event is
+crossed with **all 199 baseline publisher countries**, so a country that never
+reaches onset stays in the denominator as an uncovered, right-censored row
+(`covered = false`, `censor_hours` = hours from reference to window end).
+
+```
+response_hours_origin  = onset(E, C) − onset(E, O)          foreign, reference = "origin"
+response_hours_world   = onset(E, C) − onset(E, world)      used when O never reached onset,
+                                                            reference = "world_fallback"
+self_response_hours    = onset(E, O) − event_start(E)       domestic, reference = "event_start"
+covered                = destination has a valid, non-suppressed onset
+onset                  = max(third_source_seen, p10_seen)   unchanged from §4
+```
+
+Domestic response is measured against the event's observed start, never as
+`onset − onset` (which would be identically zero), and is labelled *observed
+domestic response*: `event_start` is GDELT's first observation, not the
+physical occurrence time. Negative foreign values are kept — they mean the
+destination's press reached onset before the origin's (or before the world) —
+and are a real finding on this window (e.g. Japan → US, Brazil → US).
+
+**Statistics** (`summarize`, `pair_matrix`). Per destination country, per
+directed pair, per matrix cell and per breakdown row:
+
+```
+coverage_rate        = covered_events / eligible_events, Wilson 95 % interval
+mean / median / p25 / p75 response hours   conditional on coverage
+latency_ci_low/high  = bootstrap of the median, seed 2026, 1,000 resamples (deterministic)
+support              = "ok" iff covered_events ≥ 5 and Σ effective_reports ≥ 15 (configurable);
+                       otherwise counts and coverage stay visible, latency fields are null
+```
+
+Latency and coverage are never collapsed into one score: fast-but-rare coverage
+is visible as such. Filters (`Filters`) AND together: level, event types,
+`min_event_effective_reports` (inclusive) / `max_event_effective_reports`
+(exclusive), date range, resolution model, reference policy
+(`origin_preferred` / `origin_only` / `world`), origin and destination sets.
+Breakdowns by origin country, event type and event-size bin
+(`5–19 / 20–99 / 100–499 / ≥500 effective reports`) carry the exact filter
+bounds that reproduce them, so a drilldown returns precisely the events that
+were aggregated (asserted by `tests/test_analytics.py`).
+
+**Measured on the served `_v5` store (family level).**
+
+```
+observation rows            1,248,128 (both levels); 484,366 family-level
+eligible events with origin 2,434 families × 199 destinations
+domestic rows               2,430 eligible, 1,638 covered
+foreign rows                481,936 eligible, 7,848 covered (5,257 origin-relative, 2,591 world fallback)
+negative foreign responses  1,356 of 7,848 covered
+```
+
+| query | covered / eligible | median | mean |
+|---|---|---|---|
+| Germany ← foreign (all origins) | 361 / 2,369 | 7.0 h | 12.0 h |
+| France ← foreign | 260 / 2,371 | 7.0 h | 11.2 h |
+| Brazil ← foreign | 224 / 2,393 | 11.0 h | 15.7 h |
+| Japan ← foreign | 37 / 2,410 | 10.0 h | 15.0 h |
+| Germany domestic (observed) | 46 / 62 | 6.4 h | 10.8 h |
+| France → Germany | 14 / 63 | 4.0 h | 8.1 h |
+| Germany → France | 9 / 65 | 13.0 h | 17.2 h |
+| Turkey → Germany (`origin_preferred`) | 36 / 160 | 19.0 h | 16.3 h |
+| Turkey → Germany (`origin_only`) | 19 / 63 | 2.0 h | 9.9 h |
+| Turkey → Germany (`world`) | 36 / 160 | 21.5 h | 18.8 h |
+
+Default reference policy is `origin_preferred` (origin-relative where the
+origin reached onset, world fallback otherwise). The Turkey rows show why the
+policy is exposed and every observation is flagged: restricted to the 63
+Turkish-origin families where Turkish outlets themselves reached onset, German
+onset follows by a median 2.0 h; measured against world onset over all 160 the
+median is 21.5 h, and the mixed default lands at 19.0 h.
+
+The two directions of a pair are separate measurements and differ here by a
+factor of three. On a single 3-day window most pair cells are thin: with the
+default gate, 9 of the 16 cells of the Germany/France/Japan/Brazil matrix show
+*insufficient support* (counts shown, latency withheld), and roughly a third of
+covered foreign observations rely on the world fallback. Adding a second window
+(Beirut) is the direct fix; the gate exists so that sparse cells are never
+shown as authoritative.
+
+**Terminology** (repeated in every response's `caveats`): *observed media
+response*, *observed response latency*, *publisher-country coverage*. Not
+"Germany learned about the event after N hours": publisher country ≠ audience,
+publisher country ≠ event location, GDELT observation time ≠ publication time,
+correlation ≠ causal transmission.
+
+---
+
 ## 5. API (`api/attention.py`, FastAPI, prefix `/api/v2/attention`)
 
 | route | purpose |
@@ -416,6 +527,19 @@ smaller served figure for the earthquake.
 | `GET /event-types`, `/event-types/{t}/countries` | type-level roll-ups (min 3 events, min 1,000 country docs before ranking) |
 | `GET /documents/{id}/evidence` | "why is this article here?": document, incident, family, `assignment_score`, `checks` (`title_similarity`, `shared_gdelt_event`, `shared_url_tokens`, `shared_entities`, `hours_to_nearest_support`, `other_publisher_country`), `supporting[]` (same-incident edges), `competing[]` (best edge into another incident), score caveat; 404 unknown doc, 503 if the store predates the table |
 | `GET /countries` | baseline per publisher country incl. name, lat, lon |
+
+Country analytics (`api/analytics.py`, prefix `/api/v2/attention/analytics`;
+all accept the §4b filters and support minimums, and add `filters`, `support`,
+`caveats` to the envelope):
+
+| route | purpose |
+|---|---|
+| `GET /countries` | every publisher country: foreign response (mean, median, P25/P75, bootstrap CI), coverage (Wilson CI), observed domestic response, N eligible / covered |
+| `GET /countries/{c}` | one country's overview plus breakdowns by origin country (top-N), event type, event-size bin and domestic event type, each row carrying its exact drilldown filter |
+| `GET /pairs?origin=FR&destination=GM` | `FR → GM` and `GM → FR` as separate blocks (stats, fastest/slowest, by event type) with contributing events |
+| `GET /matrix?origin=…&destination=…` | origin × destination cells (diagonal = observed domestic response) for any origin / destination sets, plus per-destination rows |
+| `GET /origins/{c}`, `/destinations/{c}` | how every destination responds to events in `c`; who `c` responds to, per origin |
+| `GET /events?origin=&destination=&kind=&…&limit=&offset=` | the event-level observations behind any number: event, date, types, origin onset, destination onset, response hours, reference, effective reports, attention ratio |
 
 Every response carries `meta`. No response has a bare `country` field — only
 `publisher_country` / `event_country`. The older `/api/v2/{doc,geo,ext}` routes
@@ -465,15 +589,39 @@ API error / 502 recovery, no match, countries without centroid, hidden
 low-confidence article count, "observed time ≠ publication time" caveat; dark
 mode and arcs toggles.
 
+**Country Stats tab** (`CountryStats.tsx`; top-level `Events | Country Stats`
+switch, Events state preserved). Three modes over the §4b routes:
+
+1. **Country overview** — foreign response (mean, median, coverage with CI,
+   eligible / covered) beside *observed domestic response*; breakdown tables by
+   origin country, event type, event size and domestic event type. Clicking any
+   row lists exactly the story families aggregated in it (same row collapses,
+   another row replaces).
+2. **Country ↔ Country** — `A → B` and `B → A` side by side (they are separate
+   measurements), fastest/slowest event, by-type breakdown, contributing events,
+   and a one-click *View B → A* swap.
+3. **Multi-country comparison** — checkbox/search selection (Germany, France,
+   Japan, Brazil, … preset), sortable destination table, and an origin ×
+   destination heatmap switchable between median, mean, coverage and event count;
+   diagonal cells show domestic response, unsupported cells are muted with their
+   N; tooltips carry mean/median/coverage/covered ÷ eligible/95 % CI; clicking a
+   cell opens the events behind it.
+
+Every event in a drilldown opens on the globe in Events mode. In Country Stats
+the globe highlights the selected publisher country(ies) and the event-origin
+countries with supported estimates; the legend states that arcs are observed
+media-attention relationships, not transmission. Dark mode keeps active controls
+readable (fixed in #9).
+
 Run: `cd web && npm install && npm run dev` → `http://localhost:5173/spread.html`
-(proxies `/api` to port 8000). `npm run build && npm run lint` clean (one
-pre-existing warning in the old explorer).
+(proxies `/api` to port 8000). `npx tsc -b && npm run lint && npm run build`
+clean (one pre-existing warning in the old explorer, one chunk-size notice).
 
 ---
 
 ## 7. Verification
 
-Backend: `uv run pytest -q tests` → **91 passed** (17 dependency-deprecation
+Backend: `uv run pytest -q tests` → **106 passed** (17 dependency-deprecation
 warnings from FastAPI/Starlette/matplotlib); `uv run ruff check`, `ruff format
 --check`, `uv run ty check attention api scripts` clean. No CI on the repository;
 all checks are local and re-run before each push.
@@ -513,6 +661,17 @@ asserts byte identity of every cluster Parquet on the synthetic window.
   calibration, evaluation metrics, top-entity tie ordering, Leiden edge-order
   invariance, resumable embedding shards and the distinct-title mapping;
   `tests/test_api.py` the older routes.
+- `tests/test_analytics.py` (14 tests) builds a synthetic world with known
+  answers and asserts: A → B and B → A are separate and correct; A → A uses
+  `event_start`, not `onset − onset`; mean/median/P25/P75; the multi-country
+  matrix with multiple origins and destinations; domestic vs foreign
+  eligibility; world fallback flagged; negative responses preserved; uncovered
+  countries stay in the denominator with `censor_hours`; Wilson interval;
+  bootstrap reproducibility under the fixed seed; support gating (counts kept,
+  latency null); every filter incl. the exclusive magnitude ceiling; and that
+  each event-size breakdown row's bounds reproduce exactly its own events.
+  `tests/test_backend_pipeline.py` exercises the `/analytics/*` routes on the
+  synthetic store.
 - Real-data evaluation: §3.5 (labels, sweep, flagship audit, candidate reach).
 - UI: a recorded browser test of the R3F globe (PR #5 comment) passed search →
   auto-select → fly-to, beacon, chronological markers + arcs, pause/scrub/speed/
@@ -521,7 +680,15 @@ asserts byte identity of every cluster Parquet on the synthetic window.
   recorded pass on the deterministic `_v5` store covers the evidence panel, the
   sky layer (stars, sun/moon, UTC-driven terminator), terrain relief and the
   small-spread Ohio family; its screenshots are the README gallery
-  (`docs/assets/`).
+  (`docs/assets/`). A third recorded pass (PR #8/#9) covers Country Stats
+  against the `_v5` API: Germany overview (361 / 2,369, median 7.0 h), France →
+  Germany 4.0 h (14 / 63) vs Germany → France 13.0 h (9 / 65) with the swap
+  button, the DE/FR/JP/BR matrix with metric switching and muted unsupported
+  cells, matrix-cell / origin-row / event-type / event-size drilldowns whose
+  headings match the aggregated denominators, event → globe navigation and
+  dark-mode contrast. It found two issues (type/size rows did not drill; dark
+  active tabs unreadable), fixed in #9. Not exercised: drilldowns beyond the
+  500-row page.
 
 ---
 
@@ -581,6 +748,14 @@ full text or are not runnable on GDELT metadata).
 10. **Family-linking sweep** (`scripts/family_sweep.py`, incident→family only,
     document gate fixed) was started but not exhausted (≈ 7.4 min/config on
     cached pair features); `_v5` family settings are therefore provisional.
+11. **Country analytics are sample-limited by the single window.** Pair cells
+    are thin (France → Germany N = 14, Germany → France N = 9), 9/16 cells of
+    the DE/FR/JP/BR matrix fall below the support gate, and ~⅓ of covered
+    foreign observations use the world fallback. Origin is the dominant
+    `event_country`, so multi-country events are attributed to one origin.
+    Not implemented (P1): origin/destination *region* filters (needs a
+    FIPS → region table), a free-form event-magnitude filter beyond the exact
+    size bins, and analytics-specific arcs on the globe.
 
 ## 10. Repository map
 
@@ -590,10 +765,12 @@ attention/atomic.py         documents, wire groups, doc↔event links
 attention/embed.py          multilingual title vectors (cached), boilerplate-title filter
 attention/cluster.py        channels, TitleChannel calibration, evidence gate (ClusterSettings), Leiden incidents, families, lineage, --reuse-pairs
 attention/materialize.py    store tables incl. country_family_*, document_evidence, meta.json
+attention/analytics.py      country_response_observations, Filters/Support, Wilson + seeded bootstrap, summaries, pair matrix, event records
 attention/evaluate.py       pair P/R/F1, B³, CEAF-e, per-neighbourhood majority-family metrics
 api/attention.py            FastAPI routes (family-first search, spread, evidence)
-tests/test_backend_pipeline.py, test_attention.py, test_api.py (+ older experiment tests)
-web/spread.html, web/src/spread/{App,Evidence}.tsx, api.ts, spread.css, globe/{RippleGlobe,Earth,Sky,Markers,config,geo,types}
+api/analytics.py            /analytics/{countries,pairs,matrix,origins,destinations,events}
+tests/test_backend_pipeline.py, test_attention.py, test_analytics.py, test_api.py (+ older experiment tests)
+web/spread.html, web/src/spread/{App,Evidence,CountryStats}.tsx, api.ts, spread.css, globe/{RippleGlobe,Earth,Sky,Markers,config,geo,types}
 eval/pairs_20230206.jsonl, neighborhoods_20230206.jsonl, review_20230206.csv, metrics_*.json, candidate_recall_20230206.json, flagship_20230206_{fam,v3,v5}.md
 scripts/fetch_window.py, run_window.sh, sample_eval_pairs.py, sample_eval_neighborhoods.py, export_review_csv.py,
         eval_sweep.py, rank_sweep.py, leiden_sweep.py, family_sweep.py, candidate_recall.py,
