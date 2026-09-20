@@ -182,12 +182,20 @@ def neighborhood_metrics(docs: list[dict], assignment: Assignment) -> dict:
     per: dict = {}
     for name in sorted({d["neighborhood"] for d in labelled}):
         rows = [d for d in labelled if d["neighborhood"] == name]
-        seed = rows[0]["system"]["seed_family_id"]
-        in_family = [d for d in rows if assignment.family.get(d["document_id"], -1) == seed]
         in_story = [d for d in rows if d["gold_story"] == name]
+        # The family ids of the run being evaluated differ from those of the run the
+        # sample was drawn from, so the story's family is the one holding most of its
+        # gold documents (unassigned, -1, never wins).
+        story_families = Counter(assignment.family.get(d["document_id"], -1) for d in in_story)
+        story_families.pop(-1, None)
+        seed = story_families.most_common(1)[0][0] if story_families else -1
+        in_family = [d for d in rows if assignment.family.get(d["document_id"], -1) == seed]
         hit = [d for d in in_family if d["gold_story"] == name]
         per[name] = {
-            "seed_family_id": seed,
+            "majority_family_id": seed,
+            "majority_family_share": (
+                story_families[seed] / len(in_story) if in_story and seed != -1 else None
+            ),
             "sampled": len(rows),
             "family_precision": len(hit) / len(in_family) if in_family else None,
             "family_recall_within_sample": len(hit) / len(in_story) if in_story else None,

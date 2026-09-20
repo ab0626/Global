@@ -1,6 +1,6 @@
 {
-  "clusters": "data/clusters/20230206_v3",
-  "unassigned_rate": 0.09155464273423972,
+  "clusters": "data/clusters/20230206_fam",
+  "unassigned_rate": 0.08103959665921964,
   "pairs": {
     "labelled_pairs": 300,
     "label_counts": {
@@ -10,13 +10,13 @@
     },
     "incident": {
       "all": {
-        "precision": 0.44871794871794873,
-        "recall": 0.5223880597014925,
-        "f1": 0.4827586206896552,
-        "tp": 35,
-        "fp": 43,
-        "fn": 32,
-        "tn": 190,
+        "precision": 0.31958762886597936,
+        "recall": 0.4626865671641791,
+        "f1": 0.3780487804878048,
+        "tp": 31,
+        "fp": 66,
+        "fn": 36,
+        "tn": 167,
         "n": 300
       },
       "split_strong_title": {
@@ -24,29 +24,29 @@
         "recall": 0.0,
         "f1": 0.0,
         "tp": 0,
-        "fp": 1,
+        "fp": 0,
         "fn": 2,
-        "tn": 57,
+        "tn": 58,
         "n": 60
       },
       "merged_cross_language": {
-        "precision": 0.3235294117647059,
+        "precision": 0.21153846153846154,
         "recall": 1.0,
-        "f1": 0.48888888888888893,
+        "f1": 0.34920634920634924,
         "tp": 11,
-        "fp": 23,
+        "fp": 41,
         "fn": 0,
-        "tn": 26,
+        "tn": 8,
         "n": 60
       },
       "merged_near_gate": {
-        "precision": 0.5135135135135135,
-        "recall": 0.95,
-        "f1": 0.6666666666666667,
-        "tp": 19,
-        "fp": 18,
-        "fn": 1,
-        "tn": 12,
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "f1": 0.6153846153846153,
+        "tp": 20,
+        "fp": 25,
+        "fn": 0,
+        "tn": 5,
         "n": 50
       },
       "split_shared_event": {
@@ -70,25 +70,25 @@
         "n": 30
       },
       "sibling_incidents": {
-        "precision": 0.8333333333333334,
-        "recall": 0.16666666666666666,
-        "f1": 0.2777777777777778,
-        "tp": 5,
-        "fp": 1,
-        "fn": 25,
-        "tn": 29,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 30,
+        "tn": 30,
         "n": 60
       }
     },
     "family": {
       "all": {
-        "precision": 0.5785123966942148,
-        "recall": 0.7142857142857143,
-        "f1": 0.639269406392694,
-        "tp": 70,
-        "fp": 51,
-        "fn": 28,
-        "tn": 151,
+        "precision": 0.4968152866242038,
+        "recall": 0.7959183673469388,
+        "f1": 0.6117647058823529,
+        "tp": 78,
+        "fp": 79,
+        "fn": 20,
+        "tn": 123,
         "n": 300
       },
       "split_strong_title": {
@@ -96,29 +96,29 @@
         "recall": 0.0,
         "f1": 0.0,
         "tp": 0,
-        "fp": 4,
+        "fp": 0,
         "fn": 7,
-        "tn": 49,
+        "tn": 53,
         "n": 60
       },
       "merged_cross_language": {
-        "precision": 0.3333333333333333,
+        "precision": 0.23076923076923078,
         "recall": 1.0,
-        "f1": 0.5,
+        "f1": 0.375,
         "tp": 12,
-        "fp": 24,
+        "fp": 40,
         "fn": 0,
-        "tn": 24,
+        "tn": 8,
         "n": 60
       },
       "merged_near_gate": {
-        "precision": 0.6486486486486487,
-        "recall": 0.9230769230769231,
-        "f1": 0.7619047619047619,
-        "tp": 24,
-        "fp": 13,
-        "fn": 2,
-        "tn": 11,
+        "precision": 0.5777777777777777,
+        "recall": 1.0,
+        "f1": 0.732394366197183,
+        "tp": 26,
+        "fp": 19,
+        "fn": 0,
+        "tn": 5,
         "n": 50
       },
       "split_shared_event": {
@@ -142,20 +142,20 @@
         "n": 30
       },
       "sibling_incidents": {
-        "precision": 0.7727272727272727,
-        "recall": 0.85,
-        "f1": 0.8095238095238095,
-        "tp": 34,
-        "fp": 10,
-        "fn": 6,
-        "tn": 10,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "tp": 40,
+        "fp": 20,
+        "fn": 0,
+        "tn": 0,
         "n": 60
       }
     },
     "candidate_recall": {
       "positives": 98,
-      "in_candidates": 93,
-      "recall": 0.9489795918367347,
+      "in_candidates": 98,
+      "recall": 1.0,
       "note": "pairs were drawn from candidate_pairs, so this is 1.0 by construction unless the run being scored used different retrieval settings"
     }
   },
@@ -163,46 +163,46 @@
     "labelled_documents": 300,
     "incident": {
       "gold_clusters": 57,
-      "system_clusters": 220,
+      "system_clusters": 221,
       "b_cubed": {
-        "precision": 0.9644444444444443,
-        "recall": 0.24986167247386792,
-        "f1": 0.39689778144011456
+        "precision": 0.9566666666666669,
+        "recall": 0.24784510259388326,
+        "f1": 0.3936950293042089
       },
       "ceaf_e": {
-        "precision": 0.17014581487901642,
-        "recall": 0.656703145147081,
-        "f1": 0.2702677203854413
+        "precision": 0.1666349691433303,
+        "recall": 0.6460759329943158,
+        "f1": 0.26493761281061873
       },
       "pairwise": {
-        "precision": 0.8852459016393442,
-        "recall": 0.05147759771210677,
-        "f1": 0.0972972972972973,
-        "tp": 108,
-        "fp": 14,
-        "fn": 1990
+        "precision": 0.831858407079646,
+        "recall": 0.044804575786463297,
+        "f1": 0.08502939846223428,
+        "tp": 94,
+        "fp": 19,
+        "fn": 2004
       }
     },
     "family": {
       "gold_clusters": 20,
-      "system_clusters": 88,
+      "system_clusters": 79,
       "b_cubed": {
-        "precision": 0.9473888888888883,
-        "recall": 0.42801214402545357,
-        "f1": 0.5896374073531453
+        "precision": 0.9377222222222222,
+        "recall": 0.49335999641504763,
+        "f1": 0.6465521353963913
       },
       "ceaf_e": {
-        "precision": 0.12403065001163967,
-        "recall": 0.5457348600512145,
-        "f1": 0.20212402224119058
+        "precision": 0.13030661438694832,
+        "recall": 0.5147111268284459,
+        "f1": 0.2079640916478569
       },
       "pairwise": {
-        "precision": 0.9349544072948328,
-        "recall": 0.3851740545955422,
-        "f1": 0.5455835402625044,
-        "tp": 3076,
-        "fp": 214,
-        "fn": 4910
+        "precision": 0.9213255755122691,
+        "recall": 0.4560480841472577,
+        "f1": 0.6101013485216517,
+        "tp": 3642,
+        "fp": 311,
+        "fn": 4344
       }
     },
     "per_neighborhood": {
@@ -213,43 +213,43 @@
         "family_precision": 1.0,
         "family_recall_within_sample": 0.7407407407407407,
         "gold_incidents": 13,
-        "system_incidents_in_story": 41
+        "system_incidents_in_story": 42
       },
       "grammys": {
-        "majority_family_id": 146,
-        "majority_family_share": 0.5,
+        "majority_family_id": 157,
+        "majority_family_share": 0.6551724137931034,
         "sampled": 60,
-        "family_precision": 0.9666666666666667,
-        "family_recall_within_sample": 0.5,
+        "family_precision": 0.95,
+        "family_recall_within_sample": 0.6551724137931034,
         "gold_incidents": 9,
         "system_incidents_in_story": 38
       },
       "state_of_the_union": {
-        "majority_family_id": 1210,
+        "majority_family_id": 4668,
         "majority_family_share": 0.6666666666666666,
         "sampled": 60,
         "family_precision": 0.95,
         "family_recall_within_sample": 0.6666666666666666,
         "gold_incidents": 6,
-        "system_incidents_in_story": 40
+        "system_incidents_in_story": 41
       },
       "turkey_quake": {
-        "majority_family_id": 6155,
-        "majority_family_share": 0.603448275862069,
+        "majority_family_id": 6214,
+        "majority_family_share": 0.6724137931034483,
         "sampled": 60,
-        "family_precision": 1.0,
-        "family_recall_within_sample": 0.603448275862069,
+        "family_precision": 0.975,
+        "family_recall_within_sample": 0.6724137931034483,
         "gold_incidents": 9,
-        "system_incidents_in_story": 54
+        "system_incidents_in_story": 55
       },
       "zelensky_visit": {
-        "majority_family_id": 31370,
-        "majority_family_share": 0.5789473684210527,
+        "majority_family_id": 31345,
+        "majority_family_share": 0.6491228070175439,
         "sampled": 60,
-        "family_precision": 0.9166666666666666,
-        "family_recall_within_sample": 0.5789473684210527,
+        "family_precision": 0.925,
+        "family_recall_within_sample": 0.6491228070175439,
         "gold_incidents": 4,
-        "system_incidents_in_story": 33
+        "system_incidents_in_story": 32
       }
     }
   }

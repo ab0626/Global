@@ -52,9 +52,28 @@ STAGES: dict[str, list[dict]] = {
 }
 
 
+MAX_UNASSIGNED = 0.12
+
+
+def objective(row: dict) -> float:
+    """Precision-first selection score: false merges are more damaging to Ripple than
+    false splits, so family precision dominates and B³ (which rewards keeping huge
+    neighbourhoods together) is only one term. Runs above ``MAX_UNASSIGNED`` are
+    disqualified (``-inf``)."""
+    if row["unassigned"] >= MAX_UNASSIGNED:
+        return float("-inf")
+    return (
+        0.35 * row["pair_fam_p"]
+        + 0.20 * row["pair_fam_f1"]
+        + 0.20 * row["b3_fam_f1"]
+        + 0.15 * row["pair_inc_p"]
+        + 0.10 * row["pair_inc_f1"]
+    )
+
+
 def summarize(report: dict) -> dict:
     pairs, hoods = report["pairs"], report["neighborhoods"]
-    return {
+    row = {
         "pair_inc_p": pairs["incident"]["all"]["precision"],
         "pair_inc_r": pairs["incident"]["all"]["recall"],
         "pair_inc_f1": pairs["incident"]["all"]["f1"],
@@ -74,6 +93,8 @@ def summarize(report: dict) -> dict:
         / len(hoods["per_neighborhood"]),
         "unassigned": report["unassigned_rate"],
     }
+    row["objective"] = objective(row)
+    return row
 
 
 def main() -> None:
@@ -132,7 +153,7 @@ def main() -> None:
         print(json.dumps(row), flush=True)
         (out / "graph_edges.parquet").unlink(missing_ok=True)
 
-    table = pl.DataFrame(rows)
+    table = pl.DataFrame(rows).sort("objective", descending=True)
     table.write_csv(args.output / f"{args.stage}.csv")
     with pl.Config(tbl_cols=-1, tbl_rows=-1, tbl_width_chars=250, float_precision=3):
         print(table)
