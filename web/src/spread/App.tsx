@@ -17,6 +17,8 @@ const EXAMPLES = ["Turkey Syria earthquake", "Chinese balloon", "Grammy", "Erdbe
 const MIN_CONFIDENCE = 0.5;
 /** Animation compresses the observed window into this many seconds. */
 const PLAY_SECONDS = 40;
+/** "story" = the incident plus its linked story family; "incident" = one Leiden cluster. */
+type Scope = "story" | "incident";
 
 type Status =
   | { kind: "idle" }
@@ -49,6 +51,7 @@ export default function App() {
   const [playhead, setPlayhead] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [scope, setScope] = useState<Scope>("story");
   const [hover, setHover] = useState<Marker | null>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -76,7 +79,7 @@ export default function App() {
     }
   }
 
-  async function select(event: MacroEvent) {
+  async function select(event: MacroEvent, useScope: Scope = scope) {
     abort.current?.abort();
     const controller = new AbortController();
     abort.current = controller;
@@ -86,7 +89,7 @@ export default function App() {
     setStatus({ kind: "loading", what: `loading spread of #${event.macro_event_id}` });
     try {
       const [spread, att] = await Promise.all([
-        fullSpread(event.macro_event_id, false, MIN_CONFIDENCE, controller.signal),
+        fullSpread(event.macro_event_id, useScope === "story", MIN_CONFIDENCE, controller.signal),
         eventCountries(event.macro_event_id),
       ]);
       if (controller.signal.aborted) return;
@@ -205,6 +208,28 @@ export default function App() {
                 {utc(loaded.event.end_time)}
                 {loaded.event.event_country && <> · event in {name(loaded.event.event_country, baseline)}</>}
               </p>
+              <p className="scope" role="radiogroup" aria-label="spread scope">
+                {(
+                  [
+                    ["story", `whole story (family #${loaded.event.family_id})`],
+                    ["incident", "this incident only"],
+                  ] as [Scope, string][]
+                ).map(([s, label]) => (
+                  <button
+                    key={s}
+                    className={`link${scope === s ? " active" : ""}`}
+                    role="radio"
+                    aria-checked={scope === s}
+                    onClick={() => {
+                      if (scope === s) return;
+                      setScope(s);
+                      void select(loaded.event, s);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </p>
               <dl className="stats">
                 <div>
                   <dt>articles</dt>
@@ -212,11 +237,11 @@ export default function App() {
                 </div>
                 <div>
                   <dt>outlets</dt>
-                  <dd>{loaded.event.unique_domains}</dd>
+                  <dd>{new Set(loaded.spread.documents.map((d) => d.source_domain)).size}</dd>
                 </div>
                 <div>
-                  <dt>effective reports</dt>
-                  <dd>{loaded.event.effective_reports}</dd>
+                  <dt>incidents</dt>
+                  <dd>{new Set(loaded.spread.documents.map((d) => d.macro_event_id)).size}</dd>
                 </div>
                 <div>
                   <dt>publisher countries</dt>
@@ -241,10 +266,10 @@ export default function App() {
                   <tr>
                     <th>country</th>
                     <th>first seen</th>
-                    <th>lag</th>
+                    {scope === "incident" && <th>lag</th>}
                     <th>articles</th>
                     <th>eff.</th>
-                    <th>ratio</th>
+                    {scope === "incident" && <th>ratio</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -255,10 +280,14 @@ export default function App() {
                       <tr key={c.publisher_country} className={seen ? "seen" : "pending"}>
                         <td>{name(c.publisher_country, baseline)}</td>
                         <td>{utc(c.first_seen)}</td>
-                        <td>{a?.lag_hours == null ? "—" : `${a.lag_hours >= 0 ? "+" : ""}${a.lag_hours.toFixed(1)} h`}</td>
+                        {scope === "incident" && (
+                          <td>{a?.lag_hours == null ? "—" : `${a.lag_hours >= 0 ? "+" : ""}${a.lag_hours.toFixed(1)} h`}</td>
+                        )}
                         <td>{c.raw_documents}</td>
                         <td>{c.effective_reports}</td>
-                        <td>{a?.attention_ratio == null ? "—" : a.attention_ratio.toFixed(2)}</td>
+                        {scope === "incident" && (
+                          <td>{a?.attention_ratio == null ? "—" : a.attention_ratio.toFixed(2)}</td>
+                        )}
                       </tr>
                     );
                   })}
@@ -266,9 +295,16 @@ export default function App() {
               </table>
               <p className="muted small">
                 Times are when GDELT first observed each URL (15-minute batches), not publication
-                times. Lag is country onset (3rd outlet or 10th percentile) minus world onset
-                {loaded.worldOnset ? ` (${utc(loaded.worldOnset)})` : ""}; “—” = fewer than 3
-                outlets. Ratio = country's share of its own output vs world share.
+                times.
+                {scope === "incident" ? (
+                  <>
+                    {" "}Lag is country onset (3rd outlet or 10th percentile) minus world onset
+                    {loaded.worldOnset ? ` (${utc(loaded.worldOnset)})` : ""}; “—” = fewer than 3
+                    outlets. Ratio = country's share of its own output vs world share.
+                  </>
+                ) : (
+                  <> Lag and attention ratio are computed per incident; switch to “this incident only” to see them.</>
+                )}
               </p>
             </section>
           )}
@@ -325,7 +361,7 @@ export default function App() {
           )}
           {loaded && timeline && timeline.docs.length === 0 && (
             <div className="notice">
-              This incident has no articles with a resolved publisher country to animate.
+              No articles with a resolved publisher country to animate.
             </div>
           )}
         </section>
@@ -400,7 +436,7 @@ function buildTimeline(loaded: Loaded | null, baseline: Map<string, CountryBasel
     perCountry.set(code, n + 1);
     // deterministic sunflower jitter so stacked articles in one country stay legible
     const angle = n * 2.399963;
-    const radius = 0.9 * Math.sqrt(n);
+    const radius = Math.min(4, 0.9 * Math.sqrt(n));
     markers.push({
       key: String(doc.document_id),
       lat: row.lat + radius * Math.sin(angle),

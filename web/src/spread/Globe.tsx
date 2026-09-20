@@ -97,8 +97,9 @@ export function Globe({ markers, now, focus, onHover }: Props) {
 
     const [cx, cy] = [size / 2, size / 2];
     const radius = size / 2 - 8;
+    // markers are sorted by t, so the first future marker ends the pass
     for (const marker of markers) {
-      if (marker.t > now) continue;
+      if (marker.t > now) break;
       const point = projection([marker.lon, marker.lat]);
       if (!point) continue;
       // hidden on the far hemisphere when clipAngle drops the point
@@ -138,7 +139,7 @@ export function Globe({ markers, now, focus, onHover }: Props) {
     let best: Marker | null = null;
     let bestDistance = 12;
     for (const marker of markers) {
-      if (marker.t > now) continue;
+      if (marker.t > now) break;
       const point = projection([marker.lon, marker.lat]);
       if (!point) continue;
       const distance = Math.hypot(point[0] - x, point[1] - y);

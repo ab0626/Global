@@ -12,7 +12,7 @@ Two Vite entries share this package:
   ```
 
   It calls `/api/v2/attention/search`, `/countries`, `/events/{id}/spread`
-  (`include_family=false`, `min_country_confidence=0.5`) and
+  (`include_family` follows the "whole story / this incident only" toggle, default whole story; `min_country_confidence=0.5`) and
   `/events/{id}/countries`. Markers sit at country centroids from
   `country_baseline.parquet`; countries without one are listed as "not drawn".
 - `index.html` — the older GDELT Explorer described below.

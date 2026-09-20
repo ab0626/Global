@@ -90,7 +90,8 @@ body,
   color: var(--grey);
 }
 
-.examples .link {
+.examples .link,
+.scope .link {
   font: inherit;
   color: var(--blue);
   background: none;
@@ -98,6 +99,17 @@ body,
   padding: 0;
   margin-right: 14px;
   cursor: pointer;
+}
+
+.scope {
+  margin: 6px 0 10px;
+  font-size: 13px;
+}
+
+.scope .link.active {
+  color: var(--red);
+  text-decoration: underline;
+  cursor: default;
 }
 
 .spread-main {
