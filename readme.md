@@ -1,4 +1,4 @@
-# Ripple — global news event resolution and attention propagation
+# Ripple global news event resolution and attention propagation
 
 Ripple turns GDELT's noisy, multilingual, heavily syndicated news stream into
 real-world stories, then shows how media attention to each story spreads across
