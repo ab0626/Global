@@ -84,14 +84,15 @@ class ClusterSettings:
     # ...and both documents need this many features in that channel: a one-token URL
     # path or a single site-wide GlobalEventID gives cosine 1.0 without meaning it
     single_channel_min_features: int = 2
-    # a pair where either document has no usable title (missing, or site boilerplate
-    # excluded from the title channel) needs this many evidence channels: such nodes
-    # are the bridges that glue unrelated incidents ("Primeira Edição", untitled feeds)
-    titleless_min_channels: int = 2
+    # evidence channels required when either document has no usable title (missing, or
+    # site boilerplate excluded from the title channel). Raising this to 2 removes the
+    # "Primeira Edição"/untitled-feed bridges but measured worse on the Feb 2023 labels
+    # than the cross-language floor below (family P 0.656 vs 0.691, unassigned 12.0%)
+    titleless_min_channels: int = 1
     # a lone title match between documents in different languages must clear this
     # (background-calibrated) score: the multilingual encoder rates topical kin
     # ("train derails in Ohio" ~ "Indian Railways hygiene") ~0.55-0.6 across languages
-    cross_language_title_floor: float = 0.65
+    cross_language_title_floor: float = 0.6
     family_title_threshold: float = 0.4
     family_entity_threshold: float = 0.2
     family_strong_title: float = 0.7
@@ -671,6 +672,14 @@ def main() -> None:
         default=ClusterSettings.single_channel_min_features,
     )
     parser.add_argument(
+        "--titleless-min-channels", type=int, default=ClusterSettings.titleless_min_channels
+    )
+    parser.add_argument(
+        "--cross-language-title-floor",
+        type=float,
+        default=ClusterSettings.cross_language_title_floor,
+    )
+    parser.add_argument(
         "--family-title-threshold", type=float, default=ClusterSettings.family_title_threshold
     )
     parser.add_argument(
@@ -698,6 +707,8 @@ def main() -> None:
         corroboration_min_channels=args.corroboration_min_channels,
         single_channel_title_veto=args.single_channel_title_veto,
         single_channel_min_features=args.single_channel_min_features,
+        titleless_min_channels=args.titleless_min_channels,
+        cross_language_title_floor=args.cross_language_title_floor,
         family_title_threshold=args.family_title_threshold,
         family_entity_threshold=args.family_entity_threshold,
         family_strong_title=args.family_strong_title,

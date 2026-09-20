@@ -42,10 +42,13 @@ STAGES: dict[str, list[dict]] = {
         for m in (1, 2, 3)
         for t in (0.3, 0.4)
     ],
+    # adaptive: floors >= 0.65 breach MAX_UNASSIGNED on Feb 2023 (12.8%), so only the
+    # title-less rule is explored on top of the 0.60 floor
     "bridge": [
-        {"titleless_min_channels": m, "cross_language_title_floor": f}
-        for m in (1, 2)
-        for f in (0.55, 0.6, 0.65, 0.7)
+        {"titleless_min_channels": 1, "cross_language_title_floor": 0.55},
+        {"titleless_min_channels": 1, "cross_language_title_floor": 0.6},
+        {"titleless_min_channels": 1, "cross_language_title_floor": 0.65},
+        {"titleless_min_channels": 2, "cross_language_title_floor": 0.6},
     ],
     "leiden": [{"resolution": r} for r in (0.02, 0.05, 0.1, 0.2)],
     "family": [
@@ -70,15 +73,15 @@ def objective(row: dict) -> float:
     """Precision-first selection score: false merges are more damaging to Ripple than
     false splits, so family precision dominates and B³ (which rewards keeping huge
     neighbourhoods together) is only one term. Runs above ``MAX_UNASSIGNED`` are
-    disqualified (``-inf``)."""
-    if row["unassigned"] >= MAX_UNASSIGNED:
+    disqualified (``-inf``): Ripple prefers abstention over false certainty, but
+    only up to a point."""
+    if row["unassigned"] > MAX_UNASSIGNED:
         return float("-inf")
     return (
-        0.35 * row["pair_fam_p"]
-        + 0.20 * row["pair_fam_f1"]
-        + 0.20 * row["b3_fam_f1"]
-        + 0.15 * row["pair_inc_p"]
-        + 0.10 * row["pair_inc_f1"]
+        0.45 * row["pair_fam_p"]
+        + 0.25 * row["pair_fam_f1"]
+        + 0.15 * row["b3_fam_f1"]
+        + 0.15 * row["pair_inc_f1"]
     )
 
 
