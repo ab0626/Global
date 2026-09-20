@@ -868,3 +868,62 @@ def test_search_returns_families_first_with_story_level_attention(client: TestCl
     assert sum(b["raw_documents"] for b in timeline["world"]) == spread["total"]
 
     assert client.get("/api/v2/attention/families/999999/spread").status_code == 404
+
+
+def test_country_analytics_routes(client: TestClient) -> None:
+    base = "/api/v2/attention/analytics"
+    paths = client.get("/openapi.json").json()["paths"]
+    for route in (
+        "/countries",
+        "/countries/{country}",
+        "/pairs",
+        "/matrix",
+        "/origins/{country}",
+        "/destinations/{country}",
+        "/events",
+    ):
+        assert f"{base}{route}" in paths
+
+    loose = {"min_covered_events": 1, "min_effective_reports": 0}
+    table = client.get(f"{base}/countries", params=loose).json()
+    rows = {r["publisher_country"]: r for r in table["publisher_countries"]}
+    assert "US" in rows and "caveats" in table and table["filters"]["level"] == "family"
+    assert rows["US"]["foreign"]["eligible_events"] >= 1
+    for block in (rows["US"]["foreign"], rows["US"]["domestic"]):
+        assert {"eligible_events", "covered_events", "coverage_rate", "support"} <= block.keys()
+
+    # the quake is located in TU: TU → US is a foreign relationship, US → TU its reverse
+    pair = client.get(f"{base}/pairs", params={"origin": "TU", "destination": "US", **loose}).json()
+    forward, reverse = pair["forward"], pair["reverse"]
+    assert (forward["origin_country"], forward["destination_country"]) == ("TU", "US")
+    assert (reverse["origin_country"], reverse["destination_country"]) == ("US", "TU")
+    assert forward["summary"]["eligible_events"] >= 1
+    assert len(forward["events"]) == forward["summary"]["eligible_events"]
+    assert all(e["origin_country"] == "TU" for e in forward["events"])
+
+    drill = client.get(
+        f"{base}/events", params={"origin": "TU", "destination": "US", **loose}
+    ).json()
+    assert drill["total"] == forward["summary"]["eligible_events"]
+
+    overview = client.get(f"{base}/countries/US", params=loose).json()
+    assert overview["publisher_country_name"] and "by_origin" in overview and "domestic" in overview
+
+    matrix = client.get(
+        f"{base}/matrix", params={"origin": ["TU", "US"], "destination": "CI,US", **loose}
+    ).json()
+    cells = {(c["origin_country"], c["destination_country"]): c for c in matrix["cells"]}
+    assert set(cells) == {("TU", "CI"), ("TU", "US"), ("US", "CI"), ("US", "US")}
+    assert cells[("US", "US")]["kind"] == "domestic"
+    assert cells[("TU", "US")]["eligible_events"] == forward["summary"]["eligible_events"]
+
+    strict = client.get(
+        f"{base}/pairs", params={"origin": "TU", "destination": "US", "min_covered_events": 10_000}
+    ).json()
+    assert strict["forward"]["summary"]["support"]["status"] == "insufficient"
+    assert strict["forward"]["summary"]["median_response_hours"] is None
+
+    assert client.get(f"{base}/origins/TU", params=loose).json()["origin_country"] == "TU"
+    assert client.get(f"{base}/destinations/US", params=loose).json()["destination_country"] == "US"
+    assert client.get(f"{base}/countries/ZZ").status_code == 404
+    assert client.get(f"{base}/matrix").status_code == 400

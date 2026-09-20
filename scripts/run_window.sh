@@ -16,4 +16,5 @@ uv run python -m attention.cluster --features "data/features/$tag" --embeddings 
 uv run python -m attention.materialize --clean "data/clean/$tag" --features "data/features/$tag" \
   --clusters "data/clusters/$tag" --embeddings "data/embeddings/$tag" --output "data/store/$tag" \
   --domain-lookup "$lookup"
+uv run python -m attention.analytics "data/store/$tag"
 echo "done $tag"

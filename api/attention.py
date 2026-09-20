@@ -15,11 +15,13 @@ import json
 import os
 import re
 import unicodedata
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from pathlib import Path
 
 import polars as pl
 from fastapi import APIRouter, HTTPException, Query
+
+from attention.analytics import load_observations
 
 router = APIRouter()
 
@@ -123,6 +125,30 @@ class AttentionStore:
         self.title_search = self.documents.filter(
             (pl.col("macro_event_id") >= 0) & pl.col("is_primary") & pl.col("title").is_not_null()
         ).select("macro_event_id", fold_expr(pl.col("title")).alias("search_text"))
+
+    @cached_property
+    def observations(self) -> pl.DataFrame:
+        """Country response observations (``attention.analytics``), read from the store
+        when materialized there, otherwise derived from the summary tables on first use."""
+        return load_observations(self.directory)
+
+    @cached_property
+    def analytics_countries(self) -> frozenset[str]:
+        """Codes usable in analytics queries: every publisher country in the baseline plus
+        every event-origin country (which may have no resolved publishers of its own)."""
+        return frozenset(self.baseline["publisher_country"].drop_nulls().to_list()) | frozenset(
+            self.observations["origin_country"].unique().to_list()
+        )
+
+    def country_name(self, code: str) -> str:
+        row = self.baseline.filter(pl.col("publisher_country") == code)
+        return str(row["country_name"][0]) if row.height and row["country_name"][0] else code
+
+    def require_country(self, code: str) -> str:
+        code = code.upper()
+        if code not in self.analytics_countries:
+            raise HTTPException(404, f"unknown country code {code!r}")
+        return code
 
     def event(self, event_id: int) -> pl.DataFrame:
         frame = self.macro_events.filter(pl.col("macro_event_id") == event_id)

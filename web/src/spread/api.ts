@@ -222,3 +222,223 @@ export async function fullSpread(
   }
   return { ...(first as Spread), documents };
 }
+
+/* ------------------------------------------------ country response analytics */
+
+export type SupportStatus = {
+  status: "ok" | "insufficient";
+  min_covered_events: number;
+  min_effective_reports: number;
+  seed: number;
+  bootstrap_samples: number;
+};
+
+/** Coverage + latency of one bag of eligible observations (family or incident level).
+ * Latency fields are null when the support gate is not met. */
+export type ResponseSummary = {
+  eligible_events: number;
+  covered_events: number;
+  uncovered_events: number;
+  coverage_rate: number | null;
+  coverage_ci_low: number | null;
+  coverage_ci_high: number | null;
+  effective_reports: number;
+  world_fallback_events: number;
+  mean_response_hours: number | null;
+  median_response_hours: number | null;
+  p25_response_hours: number | null;
+  p75_response_hours: number | null;
+  latency_ci_low: number | null;
+  latency_ci_high: number | null;
+  fastest_response_hours: number | null;
+  slowest_response_hours: number | null;
+  support: SupportStatus;
+};
+
+export type TypeSummary = ResponseSummary & { event_types: string };
+export type MagnitudeSummary = ResponseSummary & { magnitude: string };
+export type OriginSummary = ResponseSummary & { origin_country: string; origin_country_name?: string };
+export type DestinationSummary = ResponseSummary & {
+  destination_country: string;
+  destination_country_name?: string;
+};
+
+export type AnalyticsFilters = {
+  level: "family" | "incident";
+  event_types: string[];
+  min_event_effective_reports: number;
+  start: string | null;
+  end: string | null;
+  resolution_model: string | null;
+  reference: "origin_preferred" | "origin_only" | "world";
+};
+
+export type AnalyticsEnvelope = {
+  filters: AnalyticsFilters;
+  support: Omit<SupportStatus, "status">;
+  caveats: string[];
+  meta: Meta;
+};
+
+export type CountryRow = {
+  publisher_country: string;
+  publisher_country_name: string;
+  foreign: ResponseSummary;
+  domestic: ResponseSummary;
+};
+
+export type CountryOverview = AnalyticsEnvelope & {
+  publisher_country: string;
+  publisher_country_name: string;
+  foreign: ResponseSummary;
+  domestic: ResponseSummary;
+  by_event_type: TypeSummary[];
+  by_origin: OriginSummary[];
+  by_magnitude: MagnitudeSummary[];
+  domestic_by_event_type: TypeSummary[];
+};
+
+export type ResponseEvent = {
+  level: "family" | "incident";
+  event_id: number;
+  family_id: number;
+  title: string | null;
+  event_start: string;
+  event_types: string[];
+  event_effective_reports: number;
+  origin_country: string;
+  origin_country_name?: string;
+  destination_country: string;
+  destination_country_name?: string;
+  origin_onset: string | null;
+  destination_onset: string | null;
+  world_onset: string | null;
+  response_hours: number | null;
+  response_reference: "origin" | "world_fallback" | "event_start" | "world" | null;
+  covered: boolean;
+  suppressed: boolean | null;
+  has_documents: boolean;
+  censor_hours: number | null;
+  raw_documents: number | null;
+  effective_reports: number | null;
+  attention_ratio: number | null;
+};
+
+export type PairBlock = {
+  origin_country: string;
+  origin_country_name: string;
+  destination_country: string;
+  destination_country_name: string;
+  kind: "foreign" | "domestic";
+  summary: ResponseSummary;
+  by_event_type: TypeSummary[];
+  events?: ResponseEvent[];
+};
+
+export type PairResponse = AnalyticsEnvelope & {
+  forward: PairBlock & { events: ResponseEvent[] };
+  reverse?: PairBlock;
+};
+
+export type MatrixCell = ResponseSummary & {
+  origin_country: string;
+  origin_country_name?: string;
+  destination_country: string;
+  destination_country_name?: string;
+  kind: "foreign" | "domestic";
+};
+
+export type MatrixResponse = AnalyticsEnvelope & {
+  origins: { code: string; name: string }[];
+  destinations: { code: string; name: string }[];
+  cells: MatrixCell[];
+  destination_rows: (CountryRow & { foreign_from_selected_origins: ResponseSummary })[];
+};
+
+export type OriginView = AnalyticsEnvelope & {
+  origin_country: string;
+  origin_country_name: string;
+  world: ResponseSummary;
+  domestic: ResponseSummary;
+  by_destination: DestinationSummary[];
+  by_event_type: TypeSummary[];
+};
+
+export type EventsResponse = AnalyticsEnvelope & {
+  total: number;
+  offset: number;
+  limit: number;
+  summary: ResponseSummary;
+  events: ResponseEvent[];
+};
+
+/** Query-string form of the composable analytics filters + support gate. */
+export type AnalyticsQuery = {
+  level: "family" | "incident";
+  event_type?: string[];
+  min_event_effective_reports?: number;
+  start?: string;
+  end?: string;
+  reference: "origin_preferred" | "origin_only" | "world";
+  min_covered_events: number;
+  min_effective_reports: number;
+};
+
+type QueryValue = string | number | boolean | string[] | undefined;
+
+async function getMulti<T>(path: string, params: Record<string, QueryValue>): Promise<T> {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === "") continue;
+    if (Array.isArray(value)) for (const v of value) search.append(key, v);
+    else search.set(key, String(value));
+  }
+  const response = await fetch(`${BASE}/analytics${path}?${search}`);
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      detail = (await response.json()).detail ?? detail;
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new Error(`${response.status}: ${detail}`);
+  }
+  return (await response.json()) as T;
+}
+
+export function eventTypes() {
+  return get<{ types: { type: string; events: number; raw_documents: number }[]; meta: Meta }>(
+    "/event-types",
+    {},
+  );
+}
+
+export function analyticsCountries(q: AnalyticsQuery) {
+  return getMulti<AnalyticsEnvelope & { publisher_countries: CountryRow[] }>("/countries", { ...q });
+}
+
+export function analyticsCountry(code: string, q: AnalyticsQuery, topOrigins = 25) {
+  return getMulti<CountryOverview>(`/countries/${code}`, { ...q, top_origins: topOrigins });
+}
+
+export function analyticsPair(origin: string, destination: string, q: AnalyticsQuery, limit = 500) {
+  return getMulti<PairResponse>("/pairs", { ...q, origin, destination, limit });
+}
+
+export function analyticsMatrix(origins: string[], destinations: string[], q: AnalyticsQuery) {
+  return getMulti<MatrixResponse>("/matrix", { ...q, origin: origins, destination: destinations });
+}
+
+export function analyticsOrigin(code: string, q: AnalyticsQuery) {
+  return getMulti<OriginView>(`/origins/${code}`, { ...q });
+}
+
+export function analyticsEvents(
+  origin: string,
+  destination: string,
+  kind: "all" | "foreign" | "domestic",
+  q: AnalyticsQuery,
+  limit = 500,
+) {
+  return getMulti<EventsResponse>("/events", { ...q, origin, destination, kind, limit });
+}

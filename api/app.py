@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from api.analytics import router as analytics_router
 from api.attention import router as attention_router
 from api.dataset import Dataset, load, parse_datetime, stamp
 from api.query import QueryError, filter_frame
@@ -37,6 +38,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(attention_router, prefix="/api/v2/attention", tags=["attention"])
+app.include_router(
+    analytics_router, prefix="/api/v2/attention/analytics", tags=["country analytics"]
+)
 
 
 def dataset() -> Dataset:
