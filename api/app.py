@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from api.attention import router as attention_router
 from api.dataset import Dataset, load, parse_datetime, stamp
 from api.query import QueryError, filter_frame
 from api.schema import EVENT_ROOT_CODES, QUAD_CLASSES
@@ -35,6 +36,7 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+app.include_router(attention_router, prefix="/api/v2/attention", tags=["attention"])
 
 
 def dataset() -> Dataset:
@@ -476,6 +478,16 @@ def root() -> JSONResponse:
                 "/api/v2/ext/events/{id}",
                 "/api/v2/ext/facets",
                 "/api/v2/ext/meta",
+                "/api/v2/attention/search",
+                "/api/v2/attention/events",
+                "/api/v2/attention/events/{id}",
+                "/api/v2/attention/events/{id}/spread",
+                "/api/v2/attention/events/{id}/timeline",
+                "/api/v2/attention/events/{id}/countries",
+                "/api/v2/attention/families/{id}",
+                "/api/v2/attention/event-types",
+                "/api/v2/attention/event-types/{type}/countries",
+                "/api/v2/attention/countries",
             ],
         }
     )
