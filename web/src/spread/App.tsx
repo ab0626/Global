@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { RippleGlobe } from "./globe/RippleGlobe";
 import type { GlobeConfig } from "./globe/config";
 import type { CountryMarker, Hover, Origin } from "./globe/types";
@@ -17,7 +17,13 @@ import {
   type SpreadDocument,
 } from "./api";
 import { EvidencePanel } from "./Evidence";
+import { CountryStats, type StatsScene } from "./CountryStats";
 import "./spread.css";
+
+/** Top-level tabs: animate one event's spread, or query countries directly. */
+type Mode = "events" | "countries";
+/** Fixed playhead for the analytics globe: markers lit, relationship arcs steady. */
+const STATS_NOW = 2;
 
 const EXAMPLES = ["Turkey Syria earthquake", "Chinese balloon", "Grammy", "Erdbeben", "地震"];
 const MIN_CONFIDENCE = 0.5;
@@ -56,6 +62,8 @@ const fmt = new Intl.DateTimeFormat("en-GB", {
 const utc = (iso: string) => `${fmt.format(new Date(iso))} UTC`;
 
 export default function App() {
+  const [mode, setMode] = useState<Mode>("events");
+  const [statsScene, setStatsScene] = useState<StatsScene | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Family[] | null>(null);
   const [expanded, setExpanded] = useState<Map<number, MacroEvent[]>>(new Map());
@@ -151,7 +159,37 @@ export default function App() {
     }
   }
 
+  /** From Country Stats: open a story (or one incident of it) in the event view. */
+  async function openEvent(familyId: number, incidentId: number | null) {
+    setMode("events");
+    setStatus({ kind: "loading", what: `loading story #${familyId}` });
+    try {
+      const detail = await familyDetail(familyId);
+      setResults([detail.family]);
+      setExpanded((m) => new Map(m).set(familyId, detail.events));
+      setQuery(detail.family.title ?? detail.family.label ?? "");
+      const incident = detail.events.find((e) => e.macro_event_id === incidentId);
+      await select(
+        incident
+          ? { kind: "incident", event: incident, family: detail.family }
+          : { kind: "family", family: detail.family },
+      );
+    } catch (e) {
+      setStatus({ kind: "error", message: (e as Error).message });
+    }
+  }
+
+  function switchMode(next: Mode) {
+    if (next === mode) return;
+    setMode(next);
+    setPlaying(false);
+    setHover(null);
+    side.current?.scrollTo({ top: 0 });
+  }
+
   const timeline = useMemo(() => buildTimeline(loaded, baseline), [loaded, baseline]);
+  const statsGlobe = useMemo(() => buildStatsGlobe(statsScene, baseline), [statsScene, baseline]);
+  const countriesMode = mode === "countries";
 
   useEffect(() => {
     if (!playing || !timeline) return;
@@ -185,8 +223,27 @@ export default function App() {
   );
 
   return (
-    <div className={`spread-app ${background}`}>
+    <div className={`spread-app ${background} ${countriesMode ? "countries-mode" : ""}`}>
       <header className="spread-header">
+        <nav className="mode-tabs" aria-label="view">
+          <button className={`tab ${!countriesMode ? "active" : ""}`} onClick={() => switchMode("events")}>
+            Events
+          </button>
+          <button className={`tab ${countriesMode ? "active" : ""}`} onClick={() => switchMode("countries")}>
+            Country Stats
+          </button>
+        </nav>
+        {countriesMode ? (
+          <>
+            <h1>How quickly does each country's press respond?</h1>
+            <p className="examples">
+              Observed media response by publisher country, measured on the same story families the
+              globe animates: foreign vs domestic events, country → country pairs, and multi-country
+              matrices. Every number drills down to the events behind it.
+            </p>
+          </>
+        ) : (
+        <>
         <h1>
           Show the spread of{" "}
           <form
@@ -213,10 +270,21 @@ export default function App() {
             </button>
           ))}
         </p>
+        </>
+        )}
       </header>
 
       <main className="spread-main">
         <aside className="spread-side" ref={side}>
+          <div hidden={!countriesMode}>
+            <CountryStats
+              baseline={baseline}
+              onScene={setStatsScene}
+              onOpenEvent={(f, i) => void openEvent(f, i)}
+              utc={utc}
+            />
+          </div>
+          <div hidden={countriesMode}>
           {status.kind === "error" && <div className="notice error">{status.message}</div>}
           {status.kind === "loading" && <div className="notice">{status.what}…</div>}
           {results && results.length === 0 && (
@@ -440,21 +508,25 @@ export default function App() {
               )}
             </section>
           )}
+          </div>
         </aside>
 
         <section className="spread-stage">
           <div className="globe-wrap">
             <RippleGlobe
-              markers={timeline?.markers ?? []}
-              origin={timeline?.origin ?? null}
-              now={playhead}
-              time={clock?.getTime() ?? null}
+              markers={countriesMode ? statsGlobe.markers : (timeline?.markers ?? [])}
+              origin={countriesMode ? statsGlobe.origin : (timeline?.origin ?? null)}
+              now={countriesMode ? STATS_NOW : playhead}
+              time={countriesMode ? null : (clock?.getTime() ?? null)}
               onHover={setHover}
               config={globeConfig}
             />
-            {hover && <Tooltip hover={hover} />}
-            {!loaded && status.kind !== "loading" && (
+            {hover && (countriesMode ? <StatsTooltip hover={hover} scene={statsScene} /> : <Tooltip hover={hover} />)}
+            {!countriesMode && !loaded && status.kind !== "loading" && (
               <div className="stage-hint">Type an event above to animate where its coverage appeared.</div>
+            )}
+            {countriesMode && statsGlobe.unplaced.length > 0 && (
+              <div className="stage-hint">Not drawn (no centroid): {statsGlobe.unplaced.join(", ")}</div>
             )}
             <div className="stage-options">
               <button className="link" onClick={() => setBackground((b) => (b === "white" ? "dark" : "white"))}>
@@ -464,14 +536,24 @@ export default function App() {
                 {arcs ? "hide arcs" : "show arcs"}
               </button>
             </div>
-            <div className="legend">
-              <span><i className="swatch origin" /> event location</span>
-              <span><i className="swatch active" /> publisher country (outlet base)</span>
-              {arcs && <span className="muted">arcs show attention order, not transmission</span>}
-              {clock && <span className="muted">daylight follows the clock (UTC)</span>}
-            </div>
+            {countriesMode ? (
+              <div className="legend">
+                {statsScene?.legend.focus && <span><i className="swatch origin" /> {statsScene.legend.focus}</span>}
+                {statsScene && <span><i className="swatch active" /> {statsScene.legend.related}</span>}
+                {arcs && statsScene?.focus && statsScene.related.length > 0 && (
+                  <span className="muted">arcs = observed media-attention relationships, not transmission</span>
+                )}
+              </div>
+            ) : (
+              <div className="legend">
+                <span><i className="swatch origin" /> event location</span>
+                <span><i className="swatch active" /> publisher country (outlet base)</span>
+                {arcs && <span className="muted">arcs show attention order, not transmission</span>}
+                {clock && <span className="muted">daylight follows the clock (UTC)</span>}
+              </div>
+            )}
           </div>
-          {timeline && (
+          {!countriesMode && timeline && (
             <div className="controls">
               <button
                 onClick={() => {
@@ -508,7 +590,7 @@ export default function App() {
               </span>
             </div>
           )}
-          {loaded && timeline && timeline.docTimes.length === 0 && (
+          {!countriesMode && loaded && timeline && timeline.docTimes.length === 0 && (
             <div className="notice">
               No articles with a resolved publisher country to animate.
             </div>
@@ -559,6 +641,73 @@ function countAtOrBefore(times: number[], value: number): number {
     else hi = mid;
   }
   return lo;
+}
+
+/** Globe scene for Country Stats: the focus country as the beacon, related countries as
+ * lit markers (all at t = 0 so nothing animates). */
+function buildStatsGlobe(
+  scene: StatsScene | null,
+  baseline: Map<string, CountryBaseline>,
+): { markers: CountryMarker[]; origin: Origin | null; unplaced: string[] } {
+  if (!scene) return { markers: [], origin: null, unplaced: [] };
+  const unplaced: string[] = [];
+  const place = (code: string) => {
+    const row = baseline.get(code);
+    if (!row || row.lat == null || row.lon == null) {
+      unplaced.push(code);
+      return null;
+    }
+    return { lat: row.lat, lon: row.lon, name: row.country_name ?? code };
+  };
+  const markers: CountryMarker[] = [];
+  for (const r of scene.related) {
+    if (scene.focus && r.code === scene.focus.code) continue;
+    const at = place(r.code);
+    if (!at) continue;
+    markers.push({
+      code: r.code,
+      name: at.name,
+      lat: at.lat,
+      lon: at.lon,
+      t: 0,
+      articleTimes: [0],
+      firstSeen: "",
+      onset: null,
+      lagHours: null,
+      articles: 0,
+      effectiveReports: 0,
+      attentionRatio: null,
+    });
+  }
+  let origin: Origin | null = null;
+  if (scene.focus) {
+    const at = place(scene.focus.code);
+    if (at) origin = { lat: at.lat, lon: at.lon, title: scene.focus.label, location: at.name, globalOnset: null };
+  }
+  return { markers, origin, unplaced };
+}
+
+function StatsTooltip({ hover, scene }: { hover: Hover; scene: StatsScene | null }) {
+  const style = { left: hover.x + 14, top: hover.y + 14 };
+  const entry =
+    hover.kind === "origin" ? scene?.focus : scene?.related.find((r) => r.code === hover.marker.code);
+  if (!entry) return null;
+  return (
+    <div className="tooltip" style={style}>
+      <strong>{entry.label}</strong>
+      <span className={`tooltip-kind ${hover.kind === "origin" ? "origin" : ""}`}>
+        {hover.kind === "origin" ? "focus country" : "publisher country"}
+      </span>
+      <dl>
+        {entry.lines.map(([k, v]) => (
+          <Fragment key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </Fragment>
+        ))}
+      </dl>
+    </div>
+  );
 }
 
 function Tooltip({ hover }: { hover: Hover }) {

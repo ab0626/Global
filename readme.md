@@ -88,8 +88,10 @@ GDELT_ATTENTION_DATA=data/store/20230206 uv run uvicorn api.app:app --port 8000
 cd web && npm install && npm run dev                    # http://localhost:5173/spread.html
 ```
 
-`scripts/run_window.sh` chains the six stages below; each stage is a module with
-`--help` and can be rerun on its own. The raw window is ~1.4–1.8 GB zipped per
+`scripts/run_window.sh` chains the six stages below (plus
+`attention.analytics`, which materialises the country-response observations the
+Country Stats tab reads; the API derives them on first use if the file is
+missing); each stage is a module with `--help` and can be rerun on its own. The raw window is ~1.4–1.8 GB zipped per
 day. On a CPU-only box: preprocess ≈ 10 min, embedding ≈ 38 min per 0.9 M titles
 (the one step a GPU collapses to minutes; embeddings are cached in 20k-title
 shards and resume after interruption), full clustering ≈ 61 min, re-gating from
@@ -298,6 +300,29 @@ the group's total; $\text{lag}(c,S) = \text{onset}(c,S) - \text{onset}(\text{wor
 in hours. All times are GDELT *observation* times, so onset/lag describe
 observed media attention, not awareness or causation.
 
+**6b. Country response analytics** (`analytics.py`). Built on the materialised
+store, without touching the clustering. Each story family $E$ (default; incidents
+as drilldown) with a dominant event country $O$ — the `event_country` carrying the
+most effective reports across its incidents — is crossed with every publisher
+country $C$ in the baseline, so uncovered countries stay in the denominator as
+right-censored rows:
+
+$$
+\text{response}(E, O\!\to\!C) = \text{onset}(E,C) - \text{onset}(E,O),\qquad
+\text{domestic}(E,O) = \text{onset}(E,O) - \text{start}(E),
+$$
+
+falling back to $\text{onset}(E,C) - \text{onset}(E,\text{world})$ (flagged
+`world_fallback`) when the origin never reached onset. Negative values are kept:
+the destination's press reached onset first. Per country, pair or matrix cell:
+coverage $= \text{covered}/\text{eligible}$ with a Wilson 95 % interval, and —
+conditional on coverage, reported separately — mean, median, P25/P75 and a
+seeded ($2026$, 1,000 resamples) bootstrap interval on the median. Cells below
+the support gate (default ≥5 covered families, ≥15 effective reports) keep their
+counts but show no latency. Everything is observed *media* response: publisher
+country is where outlets are based, GDELT time is observation time, and
+correlation is not transmission.
+
 **7. Evaluation.** Pairwise $P/R/F_1$ over labelled pairs (positives:
 `same_event` at incident level, `same_event ∪ related` at family level);
 B³ over labelled neighbourhood documents,
@@ -319,6 +344,15 @@ s.t. unassigned ≤ 12 %.
 | `GET /event-types`, `/event-types/{t}/countries` | type-level roll-ups |
 | `GET /documents/{id}/evidence` | why this article is here: assignment score, supporting same-incident edges with per-channel scores, best competing edge |
 | `GET /countries` | country baseline and centroids |
+| `GET /analytics/countries`, `/analytics/countries/{c}` | observed response of every publisher country to foreign vs domestic events; per-country breakdown by event type, origin and magnitude |
+| `GET /analytics/pairs?origin=FR&destination=GM` | France → Germany and the reverse direction, with the contributing events |
+| `GET /analytics/matrix?origin=GM&origin=FR&destination=…` | origin × destination cells (diagonal = domestic response) plus per-destination rows |
+| `GET /analytics/origins/{c}`, `/destinations/{c}`, `/events` | how the world responds to events in `c`, who `c` responds to, and the raw observations behind any number |
+
+Analytics routes accept `level` (family/incident), `event_type`, `start`/`end`,
+`min_event_effective_reports`, `reference` (origin_preferred/origin_only/world)
+and the support minimums; all filters AND together, and every response adds
+`filters`, `support` and `caveats`.
 
 Every response carries `meta` (denominators, resolution model, semantics).
 `GET /docs` is the OpenAPI UI. The older GDELT-shaped explorer API
@@ -337,6 +371,17 @@ countries. Arcs show attention *order*, not transmission — GDELT does not
 establish causal flow. Clicking an article opens the evidence panel. Quality,
 terrain exaggeration, atmosphere, marker size, arcs, speed, camera and light/dark
 stage are props. Texture provenance is in `web/README.md`.
+
+The **Country Stats** tab (`CountryStats.tsx`) makes countries queryable the
+way stories already are: a country overview (foreign vs observed domestic
+response, breakdowns), a Country ↔ Country view with the reverse direction
+measured separately and a one-click swap, and a multi-country comparison with a
+sortable table and an origin × destination heatmap switchable between median,
+mean, coverage and event count. Every cell and row drills down to the story
+families behind it, and each family opens on the globe. In this mode the globe
+highlights the selected publisher country and the event-origin countries with
+supported estimates; arcs are observed media-attention relationships, not
+transmission.
 
 ## Verification
 
@@ -387,12 +432,12 @@ font-less test box.
 ## Repository map
 
 ```
-attention/   preprocess · atomic · embed · cluster · materialize · evaluate
-api/         FastAPI app (attention router + legacy explorer routes)
+attention/   preprocess · atomic · embed · cluster · materialize · analytics · evaluate
+api/         FastAPI app (attention + country-analytics routers, legacy explorer routes)
 web/         Vite: spread.html (Ripple globe) and index.html (legacy explorer)
 scripts/     run_window.sh, fetch_window.py, sweeps, audits, label sampling/export
 eval/        labelled pairs/neighbourhoods, metrics, flagship audits, review CSV
-tests/       pytest gate (91 tests)
+tests/       pytest gate (105 tests)
 docs/        project-report.md (full guide), assets/ (screenshots), architecture-plan.md, article-graph-results.md, prototypes.md
 ```
 
