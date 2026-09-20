@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import igraph as ig
@@ -17,9 +17,13 @@ from attention.cluster import (
     TitleChannel,
     boilerplate_titles,
     cpm_leiden,
+    incident_leiden,
+    incident_top_entities,
     leiden,
+    link_families,
 )
-from attention.materialize import coherence, event_types, label_for, onset
+from attention.embed import distinct_titles, encode_sharded
+from attention.materialize import coherence, event_types, label_for, onset, top_list
 from attention.preprocess import canonical_url, read_raw, resolve_country
 
 
@@ -262,6 +266,115 @@ def test_gate_vetoes_thin_single_channel_evidence_but_keeps_corroborated_pairs()
     assert apply_gate(frame, strict)["gated"].to_list()[2] == 0.0
     lenient = ClusterSettings(cross_language_title_floor=0.55)
     assert apply_gate(frame, lenient)["gated"].to_list()[2] == 0.6
+
+
+def test_top_entities_break_count_ties_deterministically() -> None:
+    # 12 entities all seen exactly once in one incident: the top-10 must be a fixed
+    # (alphabetical) subset, not whichever ten the parallel sort happened to emit
+    names = [f"e{i:02d}" for i in range(12)]
+    documents = pl.DataFrame(
+        {
+            "document_id": list(range(12)),
+            "has_gkg": [True] * 12,
+            "persons": [[n] for n in names],
+            "organizations": [None] * 12,
+        },
+        schema_overrides={"organizations": pl.List(pl.String)},
+    )
+    incident = np.zeros(12, dtype=np.int64)
+    expected = {0: set(names[:10])}
+    for _ in range(5):
+        assert incident_top_entities(incident, documents) == expected
+    members = pl.DataFrame({"cluster": [0] * 12, "persons": [[n] for n in names]})
+    top = top_list(members, "persons", "people", k=3)
+    assert top["people"].to_list() == [names[:3]]
+
+
+def test_incident_leiden_ignores_edge_insertion_order() -> None:
+    rng = np.random.default_rng(0)
+    edges: dict[tuple[int, int], float] = {}
+    for block in range(4):
+        nodes = range(block * 10, block * 10 + 10)
+        for a in nodes:
+            for b in nodes:
+                if a < b and rng.random() < 0.6:
+                    edges[(a, b)] = float(rng.uniform(0.5, 1.0))
+    for _ in range(3):
+        edges[(int(rng.integers(0, 20)), int(rng.integers(20, 40)))] = 0.3
+    forward = incident_leiden(edges, 40, 0.4, 2026)
+    shuffled = dict(reversed(list(edges.items())))
+    assert np.array_equal(forward, incident_leiden(shuffled, 40, 0.4, 2026))
+
+
+def test_family_stage_geo_channel_and_time_gap_are_aggregate_knobs() -> None:
+    """Two incidents with moderately similar centroids link only when an aggregate
+    channel corroborates (here: a shared sub-country place) and their first_seen ranges
+    lie within ``family_max_hours``; the document gate is not involved."""
+    base = np.array([1.0, 0.3, 0.0, 0.0] * 2)
+    rng = np.random.default_rng(11)
+    vectors = unit(np.vstack([base + rng.normal(scale=0.35, size=8) for _ in range(6)]))
+    ids = np.arange(6)
+    channel = TitleChannel(vectors.astype(np.float32), ids, 6)
+    incident = np.array([0, 0, 0, 1, 1, 1])
+    place = {"geo_type": 4, "name": "Antakya, Hatay, Turkey", "country_code": "TU"}
+    country = {"geo_type": 1, "name": "Turkey", "country_code": "TU"}
+    t0 = datetime(2023, 2, 6, tzinfo=UTC)
+    documents = pl.DataFrame(
+        {
+            "document_id": ids,
+            "has_gkg": [True] * 6,
+            "persons": [["a"], ["a"], ["a"], ["b"], ["b"], ["b"]],
+            "organizations": [None] * 6,
+            "locations": [[place, country]] * 3 + [[country, place]] * 3,
+            "first_seen": [t0] * 3 + [t0 + timedelta(hours=60)] * 3,
+        },
+        schema_overrides={"organizations": pl.List(pl.String)},
+    ).with_columns(pl.col("first_seen").dt.replace_time_zone("UTC"))
+    centroids = unit(np.vstack([vectors[:3].sum(0), vectors[3:].sum(0)]))
+    score = float(
+        np.clip((centroids[0] @ centroids[1] - BACKGROUND_PRIOR) / (1 - BACKGROUND_PRIOR), 0, 1)
+    )
+    assert 0.3 < score < 0.95
+    settings = ClusterSettings(
+        family_title_threshold=0.3, family_strong_title=0.99, family_max_hours=72.0
+    )
+    with_geo = dataclasses.replace(settings, family_corroboration="entity,event,geo")
+    linked = link_families(incident, documents, channel, with_geo)
+    assert linked[0] == linked[1]
+    # no shared person/event and the geo channel off -> two families
+    split = link_families(incident, documents, channel, settings)
+    assert split[0] != split[1]
+    # geo on but the 60 h gap exceeds the family window -> two families
+    narrow = dataclasses.replace(with_geo, family_max_hours=48.0)
+    gapped = link_families(incident, documents, channel, narrow)
+    assert gapped[0] != gapped[1]
+    # country-level GKG locations never corroborate on their own
+    only_country = documents.with_columns(pl.Series("locations", [[country]] * 6))
+    countries = link_families(incident, only_country, channel, with_geo)
+    assert countries[0] != countries[1]
+
+
+def test_embedding_shards_resume_and_distinct_titles_map_back(tmp_path: Path) -> None:
+    calls: list[list[str]] = []
+
+    def encode(chunk: list[str]) -> np.ndarray:
+        calls.append(chunk)
+        return np.asarray([[float(len(t)), 1.0] for t in chunk], dtype=np.float32)
+
+    titles = [f"t{i}" * (i + 1) for i in range(5)]
+    first = encode_sharded(encode, titles, tmp_path / "shards", shard_size=2)
+    assert first.shape == (5, 2) and len(calls) == 3
+    # simulate an interrupted run: the last shard is gone, the first two are reused
+    (tmp_path / "shards" / "shard_00002.npy").unlink()
+    calls.clear()
+    again = encode_sharded(encode, titles, tmp_path / "shards", shard_size=2)
+    assert calls == [titles[4:]]
+    assert np.array_equal(first, again)
+
+    titled = pl.DataFrame({"document_id": [0, 1, 2, 3], "title": ["b", "a", "b", "c"]})
+    unique, row_of = distinct_titles(titled)
+    assert unique["title"].to_list() == ["a", "b", "c"]
+    assert row_of.tolist() == [1, 0, 1, 2]
 
 
 def test_evaluation_metrics_on_perfect_and_split_clusterings() -> None:

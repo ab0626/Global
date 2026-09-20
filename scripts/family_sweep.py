@@ -1,123 +1,130 @@
-"""Two-level experiment on saved pair_features: CPM incidents on the document
-graph, then families = Leiden-CPM over incident centroids (all-pairs cosine)."""
+"""Incident -> family sweep on a finished cluster run.
+
+The document gate and incident Leiden are *not* recomputed: the incident assignment
+of ``--clusters`` is fixed and only ``link_families`` runs per configuration, so each
+configuration takes seconds instead of the ~8 min full partition. Every configuration
+is scored on the labelled pairs / neighbourhoods with the same precision-first objective
+as ``eval_sweep.py`` (incident-level metrics are identical across rows by construction).
+
+    uv run python scripts/family_sweep.py --features data/features/20230206 \
+        --embeddings data/embeddings/20230206 --clusters data/clusters/20230206_v5 \
+        --labels-pairs eval/pairs_20230206.jsonl \
+        --labels-neighborhoods eval/neighborhoods_20230206.jsonl \
+        --output data/sweeps/20230206/family
+"""
 
 from __future__ import annotations
 
-import random
+import argparse
+import dataclasses
+import json
 import sys
 from pathlib import Path
+from time import perf_counter
 
-import igraph as ig
 import numpy as np
 import polars as pl
-from leiden_sweep import QUAKE
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from eval_sweep import summarize  # noqa: E402
+
+from attention.cluster import ClusterSettings, link_families, load_inputs  # noqa: E402
+from attention.evaluate import evaluate  # noqa: E402
+
+GRID: list[dict] = [
+    {
+        "family_title_threshold": ft,
+        "family_strong_title": fs,
+        "family_max_hours": fh,
+        "family_corroboration": fc,
+        "family_resolution": fr,
+    }
+    for ft in (0.3, 0.4)
+    for fs in (0.6, 0.7)
+    for fh in (48.0, 96.0)
+    for fc in ("entity,event", "entity,event,geo")
+    for fr in (0.3, 0.5)
+]
 
 
-def cpm(graph: ig.Graph, weights: list[float], resolution: float, seed: int = 2026) -> np.ndarray:
-    ig.set_random_number_generator(random.Random(seed))
-    return np.asarray(
-        graph.community_leiden(
-            weights=weights, objective_function="CPM", resolution=resolution, n_iterations=-1
-        ).membership,
-        dtype=np.int64,
+def incident_vector(clusters: Path, count: int) -> np.ndarray:
+    members = pl.read_parquet(clusters / "incident_memberships.parquet").filter(
+        pl.col("is_primary")
     )
+    incident = np.full(count, -1, dtype=np.int64)
+    incident[members["document_id"].to_numpy()] = members["incident_id"].to_numpy()
+    return incident
 
 
-def report(frame: pl.DataFrame, column: str, label: str) -> None:
-    total_q = frame["q"].sum()
-    per = (
-        frame.filter(pl.col(column) >= 0)
-        .group_by(column)
-        .agg(
-            pl.len().alias("size"),
-            pl.col("q").sum().alias("hits"),
-            pl.col("publisher_country").n_unique().alias("countries"),
-            pl.col("language").n_unique().alias("languages"),
-        )
-        .sort("hits", descending=True)
+def write_run(
+    source: Path, out: Path, family_of_incident: np.ndarray, settings: ClusterSettings
+) -> None:
+    """``source`` with family ids replaced: memberships, incidents and run.json."""
+    out.mkdir(parents=True, exist_ok=True)
+    families = pl.DataFrame(
+        {
+            "incident_id": np.arange(len(family_of_incident), dtype=np.int64),
+            "new_family": family_of_incident,
+        }
     )
-    sizes = per.sort("size", descending=True)
-    top = per.row(0, named=True)
-    print(
-        f"[{label}] groups={per.height} largest={sizes['size'][0]} "
-        f"ge50={int((per['size'] >= 50).sum())} "
-        f"quake: size={top['size']} hits={top['hits']} purity={top['hits'] / top['size']:.2f} "
-        f"recall={top['hits'] / total_q:.2f} countries={top['countries']} langs={top['languages']}"
-    )
-    print("   next quake groups:", per.head(6).select("size", "hits").to_dicts()[1:])
-    print("   largest groups:", sizes.head(5).select("size", "hits").to_dicts())
-    rest = frame.filter((pl.col(column) == top[column]) & ~pl.col("q")).select(
-        "publisher_country", "language", "title"
-    )
-    sample = rest.sample(min(15, rest.height), seed=5)
-    for row in sample.iter_rows():
-        print("     ", row)
+    for name in ("incident_memberships", "incidents"):
+        frame = pl.read_parquet(source / f"{name}.parquet")
+        frame.join(families, on="incident_id", how="left").with_columns(
+            pl.col("new_family").fill_null(-1).alias("family_id")
+        ).drop("new_family").select(frame.columns).write_parquet(out / f"{name}.parquet")
+    audit = json.loads((source / "run.json").read_text())
+    audit["settings"] = dataclasses.asdict(settings)
+    audit["families"] = int(len(np.unique(family_of_incident[family_of_incident >= 0])))
+    audit["family_stage_only_from"] = str(source)
+    (out / "run.json").write_text(json.dumps(audit, indent=2, default=str) + "\n")
+    link = out / "candidate_pairs.parquet"
+    link.unlink(missing_ok=True)
+    link.symlink_to((source / "candidate_pairs.parquet").resolve())
 
 
 def main() -> None:
-    clusters, features, embeddings = (Path(p) for p in sys.argv[1:4])
-    docs = pl.read_parquet(features / "documents.parquet").sort("document_id")
-    count = docs.height
-    pairs = pl.read_parquet(clusters / "pair_features.parquet")
-    mins = {"title": 0.5, "event": 0.05, "url": 0.2, "entity": 0.15}
-    evidence = sum((pl.col(f"{c}_score") >= v).cast(pl.Int64) for c, v in mins.items())
-    gate = (evidence >= 2) | pl.col("single_channel_strong")
-    edges = pairs.filter(gate & (pl.col("combined") >= 0.3)).select("left", "right", "combined")
-    graph = ig.Graph(n=count, edges=edges.select("left", "right").iter_rows())
-    isolated = np.asarray(graph.degree()) == 0
-    incident = cpm(graph, edges["combined"].to_list(), 0.05)
-    incident[isolated] = -1
-    # compact ids
-    _, incident = np.unique(incident, return_inverse=True)
-    incident = incident - 1 if isolated.any() else incident
-    n_inc = int(incident.max()) + 1
-    print(f"incidents={n_inc}")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--features", type=Path, required=True)
+    parser.add_argument("--embeddings", type=Path, required=True)
+    parser.add_argument("--clusters", type=Path, required=True, help="finished cluster run")
+    parser.add_argument("--labels-pairs", type=Path, required=True)
+    parser.add_argument("--labels-neighborhoods", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
 
-    vectors = np.load(embeddings / "title_embeddings.npy")
-    ids = np.load(embeddings / "title_embedding_ids.npy")
-    row_of = np.full(count, -1, dtype=np.int64)
-    row_of[ids] = np.arange(len(ids))
-    assigned = np.flatnonzero((incident >= 0) & (row_of >= 0))
-    centroids = np.zeros((n_inc, vectors.shape[1]), dtype=np.float32)
-    np.add.at(centroids, incident[assigned], vectors[row_of[assigned]])
-    norms = np.linalg.norm(centroids, axis=1)
-    has = norms > 0
-    centroids[has] /= norms[has][:, None]
+    base = json.loads((args.clusters / "run.json").read_text())["settings"]
+    known = ClusterSettings.__dataclass_fields__
+    settings0 = ClusterSettings(**{k: v for k, v in base.items() if k in known})
+    documents, links, title, _ = load_inputs(args.features, args.embeddings, settings0)
+    incident = incident_vector(args.clusters, documents.height)
 
-    src_all, dst_all, w_all = [], [], []
-    for start in range(0, n_inc, 1024):
-        block = centroids[start : start + 1024] @ centroids.T
-        s, d = np.nonzero(block >= 0.5)
-        keep = (s + start) < d
-        src_all.append(s[keep] + start)
-        dst_all.append(d[keep])
-        w_all.append(block[s[keep], d[keep]])
-    src, dst, w = np.concatenate(src_all), np.concatenate(dst_all), np.concatenate(w_all)
-    print(f"incident-graph edges (cos>=0.5): {len(src):,}")
-    igraph_inc = ig.Graph(n=n_inc, edges=list(zip(src.tolist(), dst.tolist(), strict=True)))
-    frame = docs.with_columns(
-        pl.Series("incident", incident),
-        pl.col("title").str.contains(QUAKE).fill_null(False).alias("q"),
-    )
-    report(frame, "incident", "incidents CPM 0.05")
-    for gamma in [0.6]:
-        fam_of_inc = cpm(igraph_inc, w.tolist(), gamma)
-        family = np.where(incident >= 0, fam_of_inc[np.maximum(incident, 0)], -1)
-        fam = frame.with_columns(pl.Series("family", family))
-        report(fam, "family", f"families CPM {gamma}")
-        big = (
-            fam.filter(pl.col("family") >= 0).group_by("family").len().sort("len", descending=True)
-        )
-        for fid, size in zip(big["family"].head(6), big["len"].head(6), strict=True):
-            sub = fam.filter(pl.col("family") == fid)
-            print(
-                f"== family {fid} size={size} null_titles={sub['title'].null_count()} "
-                f"incidents={sub['incident'].n_unique()}"
-            )
-            for row in (
-                sub.select("publisher_country", "language", "title").sample(12, seed=2).iter_rows()
-            ):
-                print("      ", row)
+    rows = []
+    for i, overrides in enumerate(GRID):
+        settings = dataclasses.replace(settings0, **overrides)
+        started = perf_counter()
+        family_of_incident = link_families(incident, documents, title, settings, links)
+        out = args.output / f"{i:02d}"
+        write_run(args.clusters, out, family_of_incident, settings)
+        report = evaluate(out, args.labels_pairs, args.labels_neighborhoods)
+        (out / "eval.json").write_text(json.dumps(report, indent=2))
+        (out / "candidate_pairs.parquet").unlink()
+        row = {
+            "run": f"family/{i:02d}",
+            **overrides,
+            "families": int(len(np.unique(family_of_incident[family_of_incident >= 0]))),
+            **summarize(report),
+        }
+        row["seconds"] = perf_counter() - started
+        rows.append(row)
+        print(json.dumps(row), flush=True)
+
+    table = pl.DataFrame(rows).sort("objective", descending=True)
+    args.output.mkdir(parents=True, exist_ok=True)
+    table.write_csv(args.output / "family.csv")
+    with pl.Config(tbl_cols=-1, tbl_rows=-1, tbl_width_chars=250, float_precision=3):
+        print(table)
 
 
 if __name__ == "__main__":

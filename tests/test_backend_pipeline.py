@@ -582,12 +582,15 @@ def test_legacy_fallback_still_finds_the_quake(world: dict[str, Path]) -> None:
 
 
 def test_clustering_is_deterministic(world: dict[str, Path], tmp_path: Path) -> None:
-    first = pl.read_parquet(world["clusters"] / "incident_memberships.parquet")
     cluster.run(
         world["features"], world["embeddings"], tmp_path / "again", cluster.ClusterSettings()
     )
-    second = pl.read_parquet(tmp_path / "again" / "incident_memberships.parquet")
-    assert first.equals(second)
+    outputs = sorted(path.name for path in world["clusters"].glob("*.parquet"))
+    assert {"incident_memberships.parquet", "incidents.parquet", "graph_edges.parquet"} <= set(
+        outputs
+    )
+    for name in outputs:
+        assert (world["clusters"] / name).read_bytes() == (tmp_path / "again" / name).read_bytes()
 
 
 def test_title_permutation_destroys_structure(world: dict[str, Path], tmp_path: Path) -> None:

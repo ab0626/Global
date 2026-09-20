@@ -93,9 +93,16 @@ class ClusterSettings:
     # (background-calibrated) score: the multilingual encoder rates topical kin
     # ("train derails in Ohio" ~ "Indian Railways hygiene") ~0.55-0.6 across languages
     cross_language_title_floor: float = 0.6
+    # incident -> family stage (aggregate comparisons; the document gate is untouched)
     family_title_threshold: float = 0.4
     family_entity_threshold: float = 0.2
     family_strong_title: float = 0.7
+    # max gap between two incidents' first_seen ranges to be linked into one family
+    family_max_hours: float = 48.0
+    # aggregate channels that corroborate a centroid-title match below
+    # ``family_strong_title``: shared top person/organisation, shared GlobalEventID,
+    # shared top sub-country place (GKG geo_type >= 2)
+    family_corroboration: str = "entity,event"
     secondary_min_score: float = 0.25
 
 
@@ -520,7 +527,9 @@ def incident_top_entities(
         .drop_nulls("entity")
         .group_by("incident_id", "entity")
         .len()
-        .sort("len", descending=True)
+        # total order: ties on count are broken by entity string, otherwise the
+        # top-k set depends on the parallel sort's arbitrary tie order
+        .sort("len", "entity", descending=[True, False])
         .group_by("incident_id", maintain_order=True)
         .agg(pl.col("entity").head(top_k))
     )
@@ -529,33 +538,68 @@ def incident_top_entities(
     }
 
 
+def incident_top_places(
+    incident: np.ndarray, documents: pl.DataFrame, top_k: int = 5
+) -> dict[int, set[str]]:
+    """Most frequent sub-country GKG places (state/city, geo_type >= 2) per incident."""
+    gkg = documents.filter(pl.col("has_gkg"))
+    places = (
+        gkg.select(
+            pl.Series("incident_id", incident[gkg["document_id"].to_numpy()]),
+            pl.col("locations").alias("place"),
+        )
+        .filter(pl.col("incident_id") >= 0)
+        .explode("place")
+        .drop_nulls("place")
+        .filter(pl.col("place").struct.field("geo_type") >= 2)
+        .select("incident_id", pl.col("place").struct.field("name"))
+        .drop_nulls("name")
+        .group_by("incident_id", "name")
+        .len()
+        .sort("len", "name", descending=[True, False])
+        .group_by("incident_id", maintain_order=True)
+        .agg(pl.col("name").head(top_k))
+    )
+    return {int(i): set(p) for i, p in zip(places["incident_id"], places["name"], strict=True)}
+
+
 def incident_corroboration(
     incident: np.ndarray,
     documents: pl.DataFrame,
     links: pl.DataFrame | None,
     n_incidents: int,
-) -> tuple[dict[int, set[str]], dict[int, set[int]], np.ndarray, np.ndarray]:
-    """Per incident: top entities, GlobalEventIDs, and [start, end] of first_seen (s)."""
-    top = incident_top_entities(incident, documents)
-    events: dict[int, set[int]] = {}
-    if links is not None and links.height:
-        linked = (
-            pl.DataFrame({"document_id": np.arange(len(incident)), "incident": incident})
-            .filter(pl.col("incident") >= 0)
-            .join(links.select("document_id", "GlobalEventID"), on="document_id")
-            .group_by("incident")
-            .agg(pl.col("GlobalEventID").unique())
-        )
-        events = {
-            int(i): set(e) for i, e in zip(linked["incident"], linked["GlobalEventID"], strict=True)
-        }
+    channels: tuple[str, ...] = ("entity", "event"),
+) -> tuple[dict[str, dict[int, set]], np.ndarray, np.ndarray]:
+    """Per incident: the requested aggregate sets (``entity`` = top persons/organisations,
+    ``event`` = GlobalEventIDs, ``geo`` = top sub-country places) and [start, end] of
+    first_seen (s)."""
+    sets: dict[str, dict[int, set]] = {}
+    if "entity" in channels:
+        sets["entity"] = incident_top_entities(incident, documents)
+    if "geo" in channels:
+        sets["geo"] = incident_top_places(incident, documents)
+    if "event" in channels:
+        events: dict[int, set] = {}
+        if links is not None and links.height:
+            linked = (
+                pl.DataFrame({"document_id": np.arange(len(incident)), "incident": incident})
+                .filter(pl.col("incident") >= 0)
+                .join(links.select("document_id", "GlobalEventID"), on="document_id")
+                .group_by("incident")
+                .agg(pl.col("GlobalEventID").unique())
+            )
+            events = {
+                int(i): set(e)
+                for i, e in zip(linked["incident"], linked["GlobalEventID"], strict=True)
+            }
+        sets["event"] = events
     seen = documents["first_seen"].dt.epoch("s").to_numpy().astype(np.float64)
     assigned = incident >= 0
     start = np.full(n_incidents, np.inf)
     end = np.full(n_incidents, -np.inf)
     np.minimum.at(start, incident[assigned], seen[assigned])
     np.maximum.at(end, incident[assigned], seen[assigned])
-    return top, events, start, end
+    return sets, start, end
 
 
 def link_families(
@@ -568,8 +612,9 @@ def link_families(
     """Group incidents into story families. Title-capable windows: an incident graph
     weighted by calibrated centroid cosine, keeping a pair only when (a) the score is
     >= ``family_title_threshold``, (b) the incidents' first_seen ranges lie within
-    ``candidate_max_hours`` of each other, and (c) they share a top entity or a
-    GlobalEventID unless the score is >= ``family_strong_title``; partitioned with
+    ``family_max_hours`` of each other, and (c) they share an aggregate feature in one
+    of the ``family_corroboration`` channels unless the score is >= ``family_strong_title``
+    (documents are never re-gated: incidents are the units compared); partitioned with
     CPM-Leiden at ``family_resolution``. Legacy windows: top-entity Jaccard edges
     instead. Returns family id per incident id."""
     n_incidents = int(incident.max()) + 1 if incident.size and incident.max() >= 0 else 0
@@ -577,8 +622,10 @@ def link_families(
         return np.zeros(0, dtype=np.int64)
     edges: dict[tuple[int, int], float] = {}
     if title is not None and title.dimension:
-        top, events, t0, t1 = incident_corroboration(incident, documents, links, n_incidents)
-        max_gap = settings.candidate_max_hours * 3600.0
+        channels = tuple(c for c in settings.family_corroboration.split(",") if c)
+        sets, t0, t1 = incident_corroboration(incident, documents, links, n_incidents, channels)
+        empty: set = set()
+        max_gap = settings.family_max_hours * 3600.0
         rows = title.row_of
         assigned = np.flatnonzero((incident >= 0) & (rows >= 0))
         centroids = np.zeros((n_incidents, title.dimension), dtype=np.float32)
@@ -606,13 +653,13 @@ def link_families(
                 block[src[keep], dst[keep]].tolist(),
                 strict=True,
             ):
-                corroborated = bool(top.get(a, set()) & top.get(b, set())) or bool(
-                    events.get(a, set()) & events.get(b, set())
+                corroborated = w >= settings.family_strong_title or any(
+                    by_incident.get(a, empty) & by_incident.get(b, empty)
+                    for by_incident in sets.values()
                 )
-                if corroborated or w >= settings.family_strong_title:
+                if corroborated:
                     edges[(a, b)] = float(w)
-        graph = ig.Graph(n=n_incidents, edges=list(edges))
-        return cpm_leiden(graph, list(edges.values()), settings.family_resolution, settings.seed)
+        return incident_leiden(edges, n_incidents, settings.family_resolution, settings.seed)
     top = incident_top_entities(incident, documents)
     by_entity: dict[str, list[int]] = {}
     for inc, ents in top.items():
@@ -630,8 +677,17 @@ def link_families(
                 union = len(top[lo] | top[hi])
                 if union and inter / union >= settings.family_entity_threshold:
                     edges[(lo, hi)] = inter / union
-    graph = ig.Graph(n=n_incidents, edges=list(edges))
-    return cpm_leiden(graph, list(edges.values()), settings.family_entity_threshold, settings.seed)
+    return incident_leiden(edges, n_incidents, settings.family_entity_threshold, settings.seed)
+
+
+def incident_leiden(
+    edges: dict[tuple[int, int], float], n_incidents: int, resolution: float, seed: int
+) -> np.ndarray:
+    """CPM-Leiden over incident edges in sorted (src, dst) order, so the result depends
+    only on the edge set and the seed, not on insertion order."""
+    ordered = sorted(edges.items())
+    graph = ig.Graph(n=n_incidents, edges=[pair for pair, _ in ordered])
+    return cpm_leiden(graph, [w for _, w in ordered], resolution, seed)
 
 
 def main() -> None:
@@ -880,7 +936,7 @@ def partition(
     )
     member = member.select(
         "document_id", "incident_id", "family_id", "assignment_score", "is_primary"
-    )
+    ).sort("document_id", "incident_id")
     incidents = (
         documents.with_columns(pl.Series("incident_id", incident), pl.Series("family_id", family))
         .filter(pl.col("incident_id") >= 0)
@@ -895,7 +951,7 @@ def partition(
             pl.col("first_seen").min().alias("start_time"),
             pl.col("last_seen").max().alias("end_time"),
         )
-        .sort("documents", descending=True)
+        .sort("documents", "incident_id", descending=[True, False])
     )
     audit.update(
         {

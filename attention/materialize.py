@@ -128,7 +128,7 @@ def coherence(members: pl.DataFrame) -> pl.DataFrame:
     top = (
         entities.group_by("cluster", "entity")
         .len()
-        .sort("len", descending=True)
+        .sort("len", "entity", descending=[True, False])
         .group_by("cluster", maintain_order=True)
         .head(TOP_ENTITIES)
         .select("cluster", "entity")
@@ -252,7 +252,7 @@ def event_types(members: pl.DataFrame, atomic_links: pl.DataFrame) -> pl.DataFra
         pl.concat(frames)
         .group_by("cluster", "type")
         .agg(pl.col("share").max())
-        .sort("share", descending=True)
+        .sort("share", "type", descending=[True, False])
         .group_by("cluster", maintain_order=True)
         .agg(
             pl.col("type").head(MAX_TYPES).alias("event_types"),
@@ -261,9 +261,18 @@ def event_types(members: pl.DataFrame, atomic_links: pl.DataFrame) -> pl.DataFra
     )
 
 
-def top_list(column: str, k: int = 5) -> pl.Expr:
+def top_list(members: pl.DataFrame, column: str, alias: str, k: int = 5) -> pl.DataFrame:
+    """Per cluster, the ``k`` most frequent values of a list column; ties are broken
+    by value so the result does not depend on sort-tie order."""
     return (
-        pl.col(column).explode().drop_nulls().value_counts(sort=True).head(k).struct.field(column)
+        members.select("cluster", pl.col(column).alias("value"))
+        .explode("value")
+        .drop_nulls("value")
+        .group_by("cluster", "value")
+        .len()
+        .sort("len", "value", descending=[True, False])
+        .group_by("cluster", maintain_order=True)
+        .agg(pl.col("value").head(k).alias(alias))
     )
 
 
@@ -496,7 +505,7 @@ def main() -> None:
         .agg(
             pl.len().alias("n"), pl.col("ActionGeo_Lat").median(), pl.col("ActionGeo_Long").median()
         )
-        .sort("n", descending=True)
+        .sort("n", "ActionGeo_CountryCode", descending=[True, False])
         .group_by("cluster", maintain_order=True)
         .agg(
             pl.col("ActionGeo_CountryCode").first().alias("event_country"),
@@ -510,7 +519,7 @@ def main() -> None:
         .drop_nulls("actor")
         .group_by("cluster", "actor")
         .len()
-        .sort("len", descending=True)
+        .sort("len", "actor", descending=[True, False])
         .group_by("cluster", maintain_order=True)
         .agg(pl.col("actor").head(5).alias("actors"))
     )
@@ -520,9 +529,6 @@ def main() -> None:
             pl.col("family_id").first(),
             pl.col("first_seen").min().alias("start_time"),
             pl.col("last_seen").max().alias("end_time"),
-            top_list("persons").alias("people"),
-            top_list("organizations").alias("organizations"),
-            top_list("themes", 8).alias("themes"),
             pl.len().alias("raw_documents"),
             pl.col("domain").n_unique().alias("unique_domains"),
             pl.col("wire_group").n_unique().alias("effective_reports"),
@@ -538,6 +544,11 @@ def main() -> None:
             on="cluster",
             how="left",
         )
+        .join(top_list(assigned_members, "persons", "people"), on="cluster", how="left")
+        .join(
+            top_list(assigned_members, "organizations", "organizations"), on="cluster", how="left"
+        )
+        .join(top_list(assigned_members, "themes", "themes", 8), on="cluster", how="left")
         .join(entity_coh, on="cluster", how="left")
         .join(title_coh, on="cluster", how="left")
         .join(types, on="cluster", how="left")
@@ -549,6 +560,9 @@ def main() -> None:
             pl.col("event_types").fill_null(pl.lit([], dtype=pl.List(pl.String))),
             pl.col("event_type_shares").fill_null(pl.lit([], dtype=pl.List(pl.Float64))),
             pl.col("actors").fill_null(pl.lit([], dtype=pl.List(pl.String))),
+            pl.col("people").fill_null(pl.lit([], dtype=pl.List(pl.String))),
+            pl.col("organizations").fill_null(pl.lit([], dtype=pl.List(pl.String))),
+            pl.col("themes").fill_null(pl.lit([], dtype=pl.List(pl.String))),
             pl.coalesce("title_coherence", "entity_coherence").alias("cluster_confidence"),
             pl.lit(resolution_model).alias("resolution_model"),
         )
@@ -597,9 +611,15 @@ def main() -> None:
     families = (
         macro_events.group_by("family_id")
         .agg(
-            pl.col("macro_event_id").sort_by("effective_reports", descending=True),
-            pl.col("title").sort_by("effective_reports", descending=True).first(),
-            pl.col("label").sort_by("effective_reports", descending=True).first(),
+            pl.col("macro_event_id").sort_by(
+                ["effective_reports", "macro_event_id"], descending=[True, False]
+            ),
+            pl.col("title")
+            .sort_by(["effective_reports", "macro_event_id"], descending=[True, False])
+            .first(),
+            pl.col("label")
+            .sort_by(["effective_reports", "macro_event_id"], descending=[True, False])
+            .first(),
             pl.len().alias("incident_count"),
             pl.col("raw_documents").sum(),
             pl.col("effective_reports").sum(),
@@ -607,11 +627,11 @@ def main() -> None:
             pl.col("end_time").max(),
         )
         .rename({"macro_event_id": "macro_event_ids"})
-        .sort("effective_reports", descending=True)
+        .sort("effective_reports", "family_id", descending=[True, False])
     )
 
     primary_event = (
-        links.sort("confidence", descending=True)
+        links.sort("confidence", "GlobalEventID", descending=[True, False])
         .group_by("document_id", maintain_order=True)
         .agg(
             pl.col("GlobalEventID").first().alias("global_event_id"),
