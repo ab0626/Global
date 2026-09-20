@@ -15,6 +15,7 @@ dependencies = [
     "scikit-learn>=1.5",
     "sentence-transformers>=3.0",
     "torch>=2.4",
+    "faiss-cpu==1.15.0",
 ]
 
 [dependency-groups]
@@ -46,7 +47,7 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ty.src]
-include = ["story_clusters.py", "tests"]
+include = ["story_clusters.py", "clustering_experiment.py", "attention", "api/attention.py", "tests"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

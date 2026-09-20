@@ -1,0 +1,138 @@
+{
+  "clusters": "data/clusters/20230206_fam",
+  "max_hours": 48.0,
+  "stories": {
+    "turkey_quake": {
+      "regex_documents": 36458,
+      "gold_documents": 58,
+      "candidate_edges_within_story": 1219693,
+      "doc_reach": {
+        "reached": 1.0,
+        "same_language_partner": 0.9137931034482759,
+        "cross_language_partner": 0.9137931034482759,
+        "unreached_examples": []
+      },
+      "component": {
+        "components": 9,
+        "largest_share_of_regex_docs": 0.9978613731081377,
+        "gold_in_largest": 1.0,
+        "gold_components": 1
+      },
+      "pairwise": {
+        "pairs": 1451,
+        "recall": 0.0027567195037904893,
+        "cross_language_recall": 0.0015710919088766694
+      }
+    },
+    "china_balloon": {
+      "regex_documents": 7600,
+      "gold_documents": 54,
+      "candidate_edges_within_story": 261390,
+      "doc_reach": {
+        "reached": 1.0,
+        "same_language_partner": 0.9444444444444444,
+        "cross_language_partner": 0.8703703703703703,
+        "unreached_examples": []
+      },
+      "component": {
+        "components": 31,
+        "largest_share_of_regex_docs": 0.9859284587059443,
+        "gold_in_largest": 1.0,
+        "gold_components": 1
+      },
+      "pairwise": {
+        "pairs": 1280,
+        "recall": 0.00859375,
+        "cross_language_recall": 0.0026490066225165563
+      }
+    },
+    "state_of_the_union": {
+      "regex_documents": 6999,
+      "gold_documents": 58,
+      "candidate_edges_within_story": 225121,
+      "doc_reach": {
+        "reached": 1.0,
+        "same_language_partner": 0.9827586206896551,
+        "cross_language_partner": 0.3448275862068966,
+        "unreached_examples": []
+      },
+      "component": {
+        "components": 16,
+        "largest_share_of_regex_docs": 0.9878727350549293,
+        "gold_in_largest": 1.0,
+        "gold_components": 1
+      },
+      "pairwise": {
+        "pairs": 1592,
+        "recall": 0.010050251256281407,
+        "cross_language_recall": 0.0
+      }
+    },
+    "grammys": {
+      "regex_documents": 16572,
+      "gold_documents": 58,
+      "candidate_edges_within_story": 673081,
+      "doc_reach": {
+        "reached": 1.0,
+        "same_language_partner": 0.9827586206896551,
+        "cross_language_partner": 0.7413793103448276,
+        "unreached_examples": []
+      },
+      "component": {
+        "components": 12,
+        "largest_share_of_regex_docs": 0.9920366795366795,
+        "gold_in_largest": 1.0,
+        "gold_components": 1
+      },
+      "pairwise": {
+        "pairs": 1585,
+        "recall": 0.008832807570977918,
+        "cross_language_recall": 0.00199203187250996
+      }
+    },
+    "zelensky_visit": {
+      "regex_documents": 997,
+      "gold_documents": 57,
+      "candidate_edges_within_story": 19757,
+      "doc_reach": {
+        "reached": 0.9473684210526315,
+        "same_language_partner": 0.8421052631578947,
+        "cross_language_partner": 0.9122807017543859,
+        "unreached_examples": [
+          {
+            "document_id": 716191,
+            "title": "Ukrainischer Präsident Selenskyj reist nach Großbritannien",
+            "language": "deu"
+          },
+          {
+            "document_id": 763284,
+            "title": "Zelenskyy visits UK for first time since Russia's invasion",
+            "language": "eng"
+          },
+          {
+            "document_id": 765439,
+            "title": "ولودیمیر زلنسکی برای نخستین بار پس از آغاز جنگ اوکراین به بریتانیا سفر کرده است",
+            "language": "fas"
+          }
+        ]
+      },
+      "component": {
+        "components": 2,
+        "largest_share_of_regex_docs": 0.9990205680705191,
+        "gold_in_largest": 0.9824561403508771,
+        "gold_components": 2
+      },
+      "pairwise": {
+        "pairs": 1486,
+        "recall": 0.03297442799461642,
+        "cross_language_recall": 0.020361990950226245
+      }
+    }
+  },
+  "overall": {
+    "doc_reach": 0.9894736842105263,
+    "gold_in_largest_component": 0.9964912280701754,
+    "regex_docs_in_largest_component": 0.9941323782068082,
+    "note": "pairwise recall is bounded by top-k retrieval; component/reach are the quantities that limit clustering recall"
+  }
+}
