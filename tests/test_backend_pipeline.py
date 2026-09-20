@@ -790,8 +790,42 @@ def test_openapi_lists_new_routes(client: TestClient) -> None:
         "/families/{family_id}/spread",
         "/families/{family_id}/countries",
         "/families/{family_id}/timeline",
+        "/documents/{document_id}/evidence",
     ):
         assert f"/api/v2/attention{route}" in paths
+
+
+def test_document_evidence_explains_assignment(client: TestClient, world: dict[str, Path]) -> None:
+    assert (world["store"] / "document_evidence.parquet").exists()
+    quake = client.get("/api/v2/attention/search", params={"q": "earthquake"}).json()["events"][0]
+    spread = client.get(f"/api/v2/attention/events/{quake['macro_event_id']}/spread").json()
+    doc = spread["documents"][0]
+    body = client.get(f"/api/v2/attention/documents/{doc['document_id']}/evidence").json()
+    assert body["document"]["document_id"] == doc["document_id"]
+    assert body["incident"]["macro_event_id"] == quake["macro_event_id"]
+    assert 0 < body["assignment_score"] <= 1
+    assert body["supporting"], "a clustered document must have at least one gated in-incident edge"
+    for edge in body["supporting"]:
+        assert edge["same_incident"] and edge["gated"] > 0
+        assert edge["neighbor"]["incident_id"] == body["incident"]["macro_event_id"]
+        assert edge["neighbor"]["document_id"] != doc["document_id"]
+    ranks = [e["rank"] for e in body["supporting"]]
+    assert ranks == sorted(ranks)
+    for edge in body["competing"]:
+        assert not edge["same_incident"]
+        assert edge["neighbor"]["incident_id"] != body["incident"]["macro_event_id"]
+    checks = body["checks"]
+    assert set(checks) == {
+        "title_similarity",
+        "shared_gdelt_event",
+        "shared_url_tokens",
+        "shared_entities",
+        "hours_to_nearest_support",
+        "other_publisher_country",
+    }
+    assert checks["hours_to_nearest_support"] is not None
+    assert body["meta"]["resolution_model"]
+    assert client.get("/api/v2/attention/documents/999999999/evidence").status_code == 404
 
 
 def test_search_returns_families_first_with_story_level_attention(client: TestClient) -> None:

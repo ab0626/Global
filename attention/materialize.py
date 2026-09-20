@@ -383,10 +383,12 @@ def document_evidence(pair_features: Path, membership: pl.DataFrame) -> pl.DataF
     incident_of = (
         membership.filter(pl.col("is_primary")).select("document_id", "incident_id").lazy()
     )
-    pairs = (
-        pl.scan_parquet(pair_features)
-        .filter(pl.col("gated") > 0)
-        .select("left", "right", *EVIDENCE_COLUMNS)
+    scan = pl.scan_parquet(pair_features)
+    present = scan.collect_schema().names()
+    pairs = scan.filter(pl.col("gated") > 0).select(
+        "left",
+        "right",
+        *[pl.col(c) if c in present else pl.lit(0.0).alias(c) for c in EVIDENCE_COLUMNS],
     )
     directed = pl.concat(
         [
