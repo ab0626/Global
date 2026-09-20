@@ -44,21 +44,41 @@ from clustering_experiment import ArticleSettings, channel_candidates, tfidf_cha
 from clustering_v2 import V2Settings, clean_token, host_filter
 
 CHANNEL_WEIGHTS = {"title": 2.0, "event": 1.5, "url": 1.0, "entity": 0.5}
-CHANNEL_FLOORS = {"title": 0.65, "event": 0.8, "url": 0.8, "entity": 0.9}
+CHANNEL_FLOORS = {"title": 0.55, "event": 0.8, "url": 0.8, "entity": 0.9}
 TITLE_CANDIDATE_MIN = 0.35
+# a channel only counts as corroborating evidence above these scores; any
+# positive title cosine is not evidence (nearly every pair has one)
+CHANNEL_EVIDENCE_MIN = {
+    "title": 0.4,
+    "event": 0.05,
+    "url": 0.2,
+    "entity": 0.15,
+}
+# title cosine is calibrated against the language pair's random-pair background
+BACKGROUND_QUANTILE = 0.9
+# prior for language pairs too small to estimate: median same-language p90 after
+# centering on the Feb 2023 window (eng 0.13 ... kor 0.38)
+BACKGROUND_PRIOR = 0.17
+BACKGROUND_SAMPLES = 4000
+BACKGROUND_MIN_DOCS = 500
+# a title repeated this often by one domain is site boilerplate ("ТАСС", "Stock Market")
+BOILERPLATE_TITLE_REPEATS = 10
 
 
 @dataclass(frozen=True)
 class ClusterSettings:
     threshold: float = 0.3
-    resolution: float = 1.0
+    resolution: float = 0.05
+    family_resolution: float = 0.5
     seed: int = 2026
     max_entity_share: float = 0.1
+    max_feature_articles: int = 2000
+    max_pair_contributions: int = 2_000_000_000
     channels: str = "title,event,url,entity"
     neighbors: int = 30
     candidate_max_hours: float = 48.0
     corroboration_min_channels: int = 2
-    family_title_threshold: float = 0.55
+    family_title_threshold: float = 0.4
     family_entity_threshold: float = 0.2
     secondary_min_score: float = 0.25
 
@@ -132,15 +152,101 @@ def entity_rows(documents: pl.DataFrame, max_share: float) -> pl.DataFrame:
     return rows.join(frequent.select("feature"), on="feature", how="anti")
 
 
+def boilerplate_titles(documents: pl.DataFrame) -> np.ndarray:
+    """document_ids whose (domain, title) repeats >= BOILERPLATE_TITLE_REPEATS times."""
+    return (
+        documents.filter(pl.col("title").is_not_null())
+        .filter(pl.len().over("domain", "title") >= BOILERPLATE_TITLE_REPEATS)["document_id"]
+        .to_numpy()
+    )
+
+
 class TitleChannel:
     """Dense multilingual title vectors with FAISS HNSW retrieval."""
 
-    def __init__(self, vectors: np.ndarray, ids: np.ndarray, count: int) -> None:
+    def __init__(
+        self,
+        vectors: np.ndarray,
+        ids: np.ndarray,
+        count: int,
+        languages: np.ndarray | None = None,
+        seed: int = 2026,
+        domains: np.ndarray | None = None,
+    ) -> None:
         self.dimension = vectors.shape[1] if vectors.size else 0
         self.row_of = np.full(count, -1, dtype=np.int64)
         self.row_of[ids] = np.arange(len(ids))
-        self.vectors = np.ascontiguousarray(vectors, dtype=np.float32)
+        self.vectors = np.array(vectors, dtype=np.float32, order="C")
         self.has = self.row_of >= 0
+        self.language_codes: list[str] = ["other"]
+        self.code_of_row = np.zeros(len(ids), dtype=np.int64)
+        self.background = np.full((1, 1), BACKGROUND_PRIOR, dtype=np.float64)
+        if languages is not None and len(ids):
+            if domains is not None:
+                self.center(np.asarray(domains)[ids].astype(str))
+            self.calibrate(np.asarray(languages)[ids].astype(str), seed)
+
+    def center(self, groups: np.ndarray) -> None:
+        """Subtract each group's mean direction (groups with >= BACKGROUND_MIN_DOCS rows)
+        and renormalise (Mu & Viswanath 2018, "all-but-the-top"). Used per publisher
+        domain to cancel site boilerplate in titles ("... | Fakti.bg - News") and per
+        language to cancel the script's common component, which otherwise makes
+        unrelated same-site or same-language titles -- and their centroids -- alike."""
+        values, inverse, counts = np.unique(groups, return_inverse=True, return_counts=True)
+        for g in np.flatnonzero(counts >= BACKGROUND_MIN_DOCS):
+            rows = np.flatnonzero(inverse == g)
+            self.vectors[rows] -= self.vectors[rows].mean(axis=0, keepdims=True)
+        norms = np.linalg.norm(self.vectors, axis=1, keepdims=True)
+        self.vectors = np.ascontiguousarray(
+            np.divide(self.vectors, norms, out=np.zeros_like(self.vectors), where=norms > 0)
+        )
+
+    def calibrate(self, languages: np.ndarray, seed: int) -> None:
+        """Random-pair cosine background per language pair. The multilingual encoder
+        is far less discriminative for scripts it tokenises poorly (Korean, Bengali,
+        Kannada random pairs sit at 0.45-0.6 cosine vs 0.03 for English), so a fixed
+        cosine threshold would glue unrelated same-language titles together."""
+        values, counts = np.unique(languages, return_counts=True)
+        kept = [str(v) for v, c in zip(values, counts, strict=True) if c >= BACKGROUND_MIN_DOCS]
+        self.language_codes = ["other", *kept]
+        code = {lang: i + 1 for i, lang in enumerate(kept)}
+        self.code_of_row = np.fromiter(
+            (code.get(str(lang), 0) for lang in languages), dtype=np.int64, count=len(languages)
+        )
+        rng = np.random.default_rng(seed)
+        n = len(self.language_codes)
+        rows_of = [np.flatnonzero(self.code_of_row == i) for i in range(n)]
+        self.center(languages)
+        background = np.full((n, n), BACKGROUND_PRIOR, dtype=np.float64)
+        for a in range(n):
+            if len(rows_of[a]) < BACKGROUND_MIN_DOCS:
+                continue
+            for b in range(a, n):
+                if len(rows_of[b]) < BACKGROUND_MIN_DOCS:
+                    continue
+                left = rng.choice(rows_of[a], BACKGROUND_SAMPLES)
+                right = rng.choice(rows_of[b], BACKGROUND_SAMPLES)
+                same = left == right
+                cos = np.einsum("ij,ij->i", self.vectors[left], self.vectors[right])[~same]
+                q = float(np.quantile(cos, BACKGROUND_QUANTILE)) if cos.size else 0.0
+                background[a, b] = background[b, a] = min(max(q, 0.0), 0.99)
+        self.background = background
+
+    def background_table(self) -> pl.DataFrame:
+        rows = [
+            (self.language_codes[a], self.language_codes[b], float(self.background[a, b]))
+            for a in range(len(self.language_codes))
+            for b in range(a, len(self.language_codes))
+        ]
+        return pl.DataFrame(
+            rows,
+            schema={
+                "language_left": pl.String,
+                "language_right": pl.String,
+                "quantile": pl.Float64,
+            },
+            orient="row",
+        )
 
     def candidates(self, neighbors: int) -> np.ndarray:
         import faiss
@@ -168,7 +274,7 @@ class TitleChannel:
         source, target = source[valid], target[valid]
         return np.unique(np.minimum(source, target) * count + np.maximum(source, target))
 
-    def scores(self, left: np.ndarray, right: np.ndarray, batch: int) -> np.ndarray:
+    def cosines(self, left: np.ndarray, right: np.ndarray, batch: int) -> np.ndarray:
         out = np.zeros(len(left), dtype=np.float64)
         lrow, rrow = self.row_of[left], self.row_of[right]
         ok = (lrow >= 0) & (rrow >= 0)
@@ -177,6 +283,16 @@ class TitleChannel:
             idx = where[start : start + batch]
             out[idx] = np.einsum("ij,ij->i", self.vectors[lrow[idx]], self.vectors[rrow[idx]])
         return np.clip(out, 0.0, 1.0)
+
+    def scores(self, left: np.ndarray, right: np.ndarray, batch: int) -> np.ndarray:
+        """Cosine rescaled so the language pair's background quantile maps to 0 and
+        identical titles to 1: ``(cos - q) / (1 - q)`` clipped to [0, 1]."""
+        cos = self.cosines(left, right, batch)
+        lrow, rrow = self.row_of[left], self.row_of[right]
+        ok = (lrow >= 0) & (rrow >= 0)
+        q = np.zeros(len(left), dtype=np.float64)
+        q[ok] = self.background[self.code_of_row[lrow[ok]], self.code_of_row[rrow[ok]]]
+        return np.clip((cos - q) / (1.0 - q), 0.0, 1.0)
 
 
 def score_pairs(
@@ -210,13 +326,16 @@ def score_pairs(
         weight = CHANNEL_WEIGHTS[name]
         weight_sum += available * weight
         weighted += scores * weight
-        evidence += (scores > 0).astype(np.int64)
+        evidence += (scores >= CHANNEL_EVIDENCE_MIN[name]).astype(np.int64)
         strong |= scores >= CHANNEL_FLOORS[name]
 
     if title is not None:
         title_scores = title.scores(left, right, batch)
         absorb("title", title_scores, title.has)
-        frame = frame.with_columns(pl.Series("title_score", title_scores))
+        frame = frame.with_columns(
+            pl.Series("title_cosine", title.cosines(left, right, batch)),
+            pl.Series("title_score", title_scores),
+        )
     for name, matrix in sparse_channels.items():
         has = np.asarray(matrix.getnnz(axis=1) > 0).ravel()
         scores = np.zeros(len(left), dtype=np.float64)
@@ -240,20 +359,35 @@ def score_pairs(
     return candidates, frame
 
 
-def leiden(edges: pl.DataFrame, count: int, settings: ClusterSettings) -> np.ndarray:
-    graph = ig.Graph(n=count, edges=edges.select("left", "right").iter_rows())
-    ig.set_random_number_generator(random.Random(settings.seed))
-    membership = np.asarray(
+def cpm_leiden(graph: ig.Graph, weights: list[float], resolution: float, seed: int) -> np.ndarray:
+    """Leiden with the Constant Potts Model: a community is kept only while its mean
+    intra-pair weight stays above ``resolution``. Unlike modularity, this has no
+    resolution limit, so cluster granularity does not drift with the number of
+    documents in the window (Traag et al. 2019)."""
+    if graph.ecount() == 0:
+        # igraph's "iterate until stable" never terminates on an edgeless graph
+        return np.arange(graph.vcount(), dtype=np.int64)
+    ig.set_random_number_generator(random.Random(seed))
+    return np.asarray(
         graph.community_leiden(
-            weights=edges["gated"].to_list(),
-            objective_function="modularity",
-            resolution=settings.resolution,
+            weights=weights,
+            objective_function="CPM",
+            resolution=resolution,
             n_iterations=-1,
         ).membership,
         dtype=np.int64,
     )
+
+
+def leiden(edges: pl.DataFrame, count: int, settings: ClusterSettings) -> np.ndarray:
+    graph = ig.Graph(n=count, edges=edges.select("left", "right").iter_rows())
+    membership = cpm_leiden(graph, edges["gated"].to_list(), settings.resolution, settings.seed)
     isolated = np.asarray(graph.degree()) == 0
     membership[isolated] = -1
+    # compact ids so incident_id is 0..k-1 over non-empty incidents only
+    kept = membership >= 0
+    _, compact = np.unique(membership[kept], return_inverse=True)
+    membership[kept] = compact
     return membership
 
 
@@ -313,40 +447,14 @@ def memberships(
     )
 
 
-def link_families(
-    incident: np.ndarray,
-    documents: pl.DataFrame,
-    title: TitleChannel | None,
-    settings: ClusterSettings,
-) -> np.ndarray:
-    """Group incidents into story families: connected components over incidents
-    whose title centroids are close (when both have titles) or whose top entities
-    overlap strongly (legacy fallback). Returns family id per incident id."""
-    n_incidents = int(incident.max()) + 1 if incident.size and incident.max() >= 0 else 0
-    if n_incidents == 0:
-        return np.zeros(0, dtype=np.int64)
-    edges: set[tuple[int, int]] = set()
-    if title is not None and title.dimension:
-        rows = title.row_of
-        assigned = np.flatnonzero((incident >= 0) & (rows >= 0))
-        centroids = np.zeros((n_incidents, title.dimension), dtype=np.float32)
-        np.add.at(centroids, incident[assigned], title.vectors[rows[assigned]])
-        norms = np.linalg.norm(centroids, axis=1)
-        has_centroid = norms > 0
-        centroids[has_centroid] /= norms[has_centroid][:, None]
-        for start in range(0, n_incidents, 2048):
-            block = centroids[start : start + 2048] @ centroids.T
-            src, dst = np.nonzero(block >= settings.family_title_threshold)
-            for a, b in zip(src + start, dst, strict=True):
-                if a < b and has_centroid[a] and has_centroid[b]:
-                    edges.add((int(a), int(b)))
+def incident_top_entities(
+    incident: np.ndarray, documents: pl.DataFrame, top_k: int = 10
+) -> dict[int, set[str]]:
+    """Most frequent persons/organizations per incident (locations excluded)."""
+    gkg = documents.filter(pl.col("has_gkg"))
     entities = (
-        documents.filter(pl.col("has_gkg"))
-        .select(
-            pl.Series(
-                "incident_id",
-                incident[documents.filter(pl.col("has_gkg"))["document_id"].to_numpy()],
-            ),
+        gkg.select(
+            pl.Series("incident_id", incident[gkg["document_id"].to_numpy()]),
             pl.concat_list(
                 pl.col("persons").fill_null([]), pl.col("organizations").fill_null([])
             ).alias("entity"),
@@ -358,11 +466,58 @@ def link_families(
         .len()
         .sort("len", descending=True)
         .group_by("incident_id", maintain_order=True)
-        .agg(pl.col("entity").head(10))
+        .agg(pl.col("entity").head(top_k))
     )
-    top: dict[int, set[str]] = {
+    return {
         int(i): set(e) for i, e in zip(entities["incident_id"], entities["entity"], strict=True)
     }
+
+
+def link_families(
+    incident: np.ndarray,
+    documents: pl.DataFrame,
+    title: TitleChannel | None,
+    settings: ClusterSettings,
+) -> np.ndarray:
+    """Group incidents into story families. Title-capable windows: an incident graph
+    weighted by centroid cosine (all pairs >= ``family_title_threshold``), partitioned
+    with CPM-Leiden at ``family_resolution`` so a family's mean incident-to-incident
+    similarity stays above that value. Legacy windows: top-entity Jaccard edges
+    instead. Returns family id per incident id."""
+    n_incidents = int(incident.max()) + 1 if incident.size and incident.max() >= 0 else 0
+    if n_incidents == 0:
+        return np.zeros(0, dtype=np.int64)
+    edges: dict[tuple[int, int], float] = {}
+    if title is not None and title.dimension:
+        rows = title.row_of
+        assigned = np.flatnonzero((incident >= 0) & (rows >= 0))
+        centroids = np.zeros((n_incidents, title.dimension), dtype=np.float32)
+        np.add.at(centroids, incident[assigned], title.vectors[rows[assigned]])
+        norms = np.linalg.norm(centroids, axis=1)
+        has_centroid = norms > 0
+        centroids[has_centroid] /= norms[has_centroid][:, None]
+        # dominant language per incident; centroid cosine is calibrated against the
+        # same random-pair background as document pairs
+        code_counts = np.zeros((n_incidents, len(title.language_codes)), dtype=np.int64)
+        np.add.at(code_counts, (incident[assigned], title.code_of_row[rows[assigned]]), 1)
+        dominant = code_counts.argmax(axis=1)
+        for start in range(0, n_incidents, 1024):
+            block = centroids[start : start + 1024] @ centroids.T
+            q = title.background[dominant[start : start + 1024]][:, dominant]
+            block = np.clip((block - q) / (1.0 - q), 0.0, 1.0)
+            src, dst = np.nonzero(block >= settings.family_title_threshold)
+            src_abs = src + start
+            keep = (src_abs < dst) & has_centroid[src_abs] & has_centroid[dst]
+            for a, b, w in zip(
+                src_abs[keep].tolist(),
+                dst[keep].tolist(),
+                block[src[keep], dst[keep]].tolist(),
+                strict=True,
+            ):
+                edges[(a, b)] = float(w)
+        graph = ig.Graph(n=n_incidents, edges=list(edges))
+        return cpm_leiden(graph, list(edges.values()), settings.family_resolution, settings.seed)
+    top = incident_top_entities(incident, documents)
     by_entity: dict[str, list[int]] = {}
     for inc, ents in top.items():
         for ent in ents:
@@ -378,9 +533,9 @@ def link_families(
                 inter = len(top[lo] & top[hi])
                 union = len(top[lo] | top[hi])
                 if union and inter / union >= settings.family_entity_threshold:
-                    edges.add((lo, hi))
-    graph = ig.Graph(n=n_incidents, edges=sorted(edges))
-    return np.asarray(graph.connected_components().membership, dtype=np.int64)
+                    edges[(lo, hi)] = inter / union
+    graph = ig.Graph(n=n_incidents, edges=list(edges))
+    return cpm_leiden(graph, list(edges.values()), settings.family_entity_threshold, settings.seed)
 
 
 def main() -> None:
@@ -390,26 +545,42 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--threshold", type=float, default=ClusterSettings.threshold)
     parser.add_argument("--resolution", type=float, default=ClusterSettings.resolution)
+    parser.add_argument(
+        "--family-resolution", type=float, default=ClusterSettings.family_resolution
+    )
     parser.add_argument("--channels", default=ClusterSettings.channels)
     parser.add_argument("--neighbors", type=int, default=ClusterSettings.neighbors)
     parser.add_argument(
         "--candidate-max-hours", type=float, default=ClusterSettings.candidate_max_hours
+    )
+    parser.add_argument(
+        "--max-feature-articles", type=int, default=ClusterSettings.max_feature_articles
+    )
+    parser.add_argument(
+        "--max-pair-contributions", type=int, default=ClusterSettings.max_pair_contributions
     )
     parser.add_argument("--seed", type=int, default=ClusterSettings.seed)
     args = parser.parse_args()
     settings = ClusterSettings(
         threshold=args.threshold,
         resolution=args.resolution,
+        family_resolution=args.family_resolution,
         channels=args.channels,
         neighbors=args.neighbors,
         candidate_max_hours=args.candidate_max_hours,
+        max_feature_articles=args.max_feature_articles,
+        max_pair_contributions=args.max_pair_contributions,
         seed=args.seed,
     )
     run(args.features, args.embeddings, args.output, settings)
 
 
 def run(features: Path, embeddings: Path | None, output: Path, settings: ClusterSettings) -> dict:
-    article = ArticleSettings(neighbors=settings.neighbors, max_feature_articles=10**9)
+    article = ArticleSettings(
+        neighbors=settings.neighbors,
+        max_feature_articles=settings.max_feature_articles,
+        max_pair_contributions=settings.max_pair_contributions,
+    )
     v2 = V2Settings()
     output.mkdir(parents=True, exist_ok=True)
     started = perf_counter()
@@ -427,8 +598,15 @@ def run(features: Path, embeddings: Path | None, output: Path, settings: Cluster
     if "title" in wanted and embeddings is not None:
         loaded = load_embeddings(embeddings)
         if loaded is not None and loaded[0].size:
-            title = TitleChannel(loaded[0], loaded[1], count)
+            vectors, ids = loaded
+            boilerplate = boilerplate_titles(documents)
+            keep = ~np.isin(ids, boilerplate)
+            languages = documents["language"].fill_null("und").to_numpy()
+            domains = documents["domain"].fill_null("").to_numpy()
+            title = TitleChannel(vectors[keep], ids[keep], count, languages, settings.seed, domains)
+            title.background_table().write_parquet(output / "title_background.parquet")
             embed_meta = json.loads((embeddings / "embed.json").read_text())
+            embed_meta["boilerplate_titles_excluded"] = int(len(boilerplate))
     resolution_model = "title_multilingual_v1" if title is not None else "legacy_metadata_v1"
 
     builders = {
@@ -528,7 +706,7 @@ def run(features: Path, embeddings: Path | None, output: Path, settings: Cluster
             "pairs_gated": int((pairs["gated"] > 0).sum()),
             "edges": edges.height,
             "incidents": incidents.height,
-            "families": int(len(np.unique(family_of_incident))),
+            "families": int(len(np.unique(family[family >= 0]))),
             "unassigned_documents": int((incident < 0).sum()),
             "unassigned_rate": float((incident < 0).mean()) if count else 0.0,
             "largest_incident_documents": incidents.select(

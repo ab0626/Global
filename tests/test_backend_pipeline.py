@@ -708,6 +708,9 @@ def test_search_is_diacritic_and_cjk_tolerant(client: TestClient) -> None:
         assert body["events"][0]["event_country"] == "TU", q
         assert body["meta"]["resolution_model"] == "title_multilingual_v1"
     assert client.get("/api/v2/attention/search", params={"q": "zzz-nothing"}).json()["total"] == 0
+    # alphabetic tokens match whole words only: 'quake' is not inside 'earthquake'
+    assert client.get("/api/v2/attention/search", params={"q": "quake"}).json()["total"] == 0
+    assert client.get("/api/v2/attention/search", params={"q": "urkey"}).json()["total"] == 0
 
 
 def test_events_list_and_detail_have_no_bare_country(client: TestClient) -> None:
@@ -768,8 +771,11 @@ def test_timeline_and_countries_endpoints(client: TestClient) -> None:
 def test_type_and_country_rollups(client: TestClient) -> None:
     types = client.get("/api/v2/attention/event-types").json()["types"]
     assert any(t["type"] == "natural_disaster" for t in types)
-    rollup = client.get("/api/v2/attention/event-types/natural_disaster/countries").json()
+    path = "/api/v2/attention/event-types/natural_disaster/countries"
+    rollup = client.get(path, params={"min_events": 1, "min_country_documents": 1}).json()
     assert rollup["publisher_countries"] and "publisher_country" in rollup["publisher_countries"][0]
+    # default volume floors drop countries with a handful of documents in the window
+    assert client.get(path).json()["publisher_countries"] == []
     assert client.get("/api/v2/attention/event-types/nope/countries").status_code == 404
     countries = client.get("/api/v2/attention/countries").json()["publisher_countries"]
     assert countries and "country_effective_reports" in countries[0]

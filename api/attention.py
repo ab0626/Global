@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import unicodedata
 from functools import lru_cache
 from pathlib import Path
@@ -131,9 +132,7 @@ class AttentionStore:
         tokens = [t for t in fold(q).split() if t]
         if not tokens:
             return self.macro_events.head(0).with_columns(pl.lit(0).alias("title_hits"))
-        summary_hit = pl.all_horizontal(
-            [pl.col("search_text").str.contains(t, literal=True) for t in tokens]
-        )
+        summary_hit = pl.all_horizontal([token_match(t) for t in tokens])
         title_hits = (
             self.title_search.filter(summary_hit)
             .group_by("macro_event_id")
@@ -161,6 +160,14 @@ def store() -> AttentionStore:
         return load()
     except FileNotFoundError as error:  # pragma: no cover - configuration failure
         raise HTTPException(503, f"attention store not built: {error}") from error
+
+
+def token_match(token: str) -> pl.Expr:
+    """Whole-word match for alphabetic scripts (so 'dame' does not hit 'madame'),
+    substring match for scripts without word spacing (CJK)."""
+    if re.fullmatch(r"[\w'-]+", token) and re.search(r"[a-z\u0400-\u04ff]", token):
+        return pl.col("search_text").str.contains(rf"(^|\W){re.escape(token)}(\W|$)")
+    return pl.col("search_text").str.contains(token, literal=True)
 
 
 def records(frame: pl.DataFrame) -> list[dict]:
@@ -398,9 +405,16 @@ def list_types() -> dict:
 
 
 @router.get("/event-types/{event_type}/countries")
-def type_countries(event_type: str, min_events: int = Query(1, ge=1)) -> dict:
+def type_countries(
+    event_type: str,
+    min_events: int = Query(3, ge=1),
+    min_country_documents: int = Query(
+        1000, ge=1, description="window-wide documents a country needs before its ratio is ranked"
+    ),
+) -> dict:
     """Mean attention ratio and median lag per publisher country across all
-    macro-events carrying ``event_type``."""
+    macro-events carrying ``event_type``. Countries below the volume floors are
+    dropped because a two-document country's share ratio is meaningless."""
     data = store()
     ids = data.macro_events.filter(pl.col("event_types").list.contains(event_type)).select(
         "macro_event_id"
@@ -419,7 +433,10 @@ def type_countries(event_type: str, min_events: int = Query(1, ge=1)) -> dict:
             pl.col("lag_hours").median().alias("median_lag_hours"),
             pl.col("lag_hours").drop_nulls().len().alias("events_with_onset"),
         )
-        .filter(pl.col("events") >= min_events)
+        .filter(
+            (pl.col("events") >= min_events)
+            & (pl.col("country_documents") >= min_country_documents)
+        )
         .with_columns(
             (pl.col("raw_documents") / pl.col("country_documents")).alias("share_of_country_output")
         )
