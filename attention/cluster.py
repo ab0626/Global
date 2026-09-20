@@ -78,6 +78,12 @@ class ClusterSettings:
     neighbors: int = 30
     candidate_max_hours: float = 48.0
     corroboration_min_channels: int = 2
+    # a lone strong event/url/entity channel cannot carry a pair whose titles both
+    # exist and clearly disagree (site-wide GDELT events, URL boilerplate)
+    single_channel_title_veto: float = 0.15
+    # ...and both documents need this many features in that channel: a one-token URL
+    # path or a single site-wide GlobalEventID gives cosine 1.0 without meaning it
+    single_channel_min_features: int = 2
     family_title_threshold: float = 0.4
     family_entity_threshold: float = 0.2
     family_strong_title: float = 0.7
@@ -296,6 +302,39 @@ class TitleChannel:
         return np.clip((cos - q) / (1.0 - q), 0.0, 1.0)
 
 
+def apply_gate(frame: pl.DataFrame, settings: ClusterSettings) -> pl.DataFrame:
+    """(Re)derive ``evidence_channels``, ``single_channel_strong`` and ``gated`` from the
+    per-channel scores in a pair_features frame, so gate settings can be swept without
+    rescoring. A pair passes when >= ``corroboration_min_channels`` channels show
+    evidence, or one channel is above its floor -- but a lone event/url/entity channel
+    cannot carry a pair whose titles both exist and disagree, nor one where either
+    document has fewer than ``single_channel_min_features`` features in that channel."""
+    n = frame.height
+    evidence = np.zeros(n, dtype=np.int64)
+    strong = np.zeros(n, dtype=bool)
+    title_agrees = np.ones(n, dtype=bool)
+    if "title_score" in frame.columns:
+        scores = frame["title_score"].to_numpy()
+        both = frame["title_both"].to_numpy()
+        title_agrees = ~both | (scores >= settings.single_channel_title_veto)
+        evidence += (scores >= CHANNEL_EVIDENCE_MIN["title"]).astype(np.int64)
+        strong |= scores >= CHANNEL_FLOORS["title"]
+    for name in ("event", "url", "entity"):
+        if f"{name}_score" not in frame.columns:
+            continue
+        scores = frame[f"{name}_score"].to_numpy()
+        rich = frame[f"{name}_min_features"].to_numpy() >= settings.single_channel_min_features
+        evidence += (scores >= CHANNEL_EVIDENCE_MIN[name]).astype(np.int64)
+        strong |= (scores >= CHANNEL_FLOORS[name]) & rich & title_agrees
+    gate = (evidence >= settings.corroboration_min_channels) | strong
+    combined = frame["combined"].to_numpy()
+    return frame.with_columns(
+        pl.Series("evidence_channels", evidence),
+        pl.Series("single_channel_strong", strong),
+        pl.Series("gated", np.where(gate, combined, 0.0)),
+    )
+
+
 def score_pairs(
     keys: np.ndarray,
     proposed_by: dict[str, np.ndarray],
@@ -318,17 +357,13 @@ def score_pairs(
 
     weight_sum = np.zeros(len(left), dtype=np.float64)
     weighted = np.zeros(len(left), dtype=np.float64)
-    evidence = np.zeros(len(left), dtype=np.int64)
-    strong = np.zeros(len(left), dtype=bool)
 
     def absorb(name: str, scores: np.ndarray, has: np.ndarray) -> None:
-        nonlocal weight_sum, weighted, evidence, strong
+        nonlocal weight_sum, weighted
         available = has[left] & has[right]
         weight = CHANNEL_WEIGHTS[name]
         weight_sum += available * weight
         weighted += scores * weight
-        evidence += (scores >= CHANNEL_EVIDENCE_MIN[name]).astype(np.int64)
-        strong |= scores >= CHANNEL_FLOORS[name]
 
     if title is not None:
         title_scores = title.scores(left, right, batch)
@@ -336,9 +371,10 @@ def score_pairs(
         frame = frame.with_columns(
             pl.Series("title_cosine", title.cosines(left, right, batch)),
             pl.Series("title_score", title_scores),
+            pl.Series("title_both", title.has[left] & title.has[right]),
         )
     for name, matrix in sparse_channels.items():
-        has = np.asarray(matrix.getnnz(axis=1) > 0).ravel()
+        nnz = np.asarray(matrix.getnnz(axis=1)).ravel()
         scores = np.zeros(len(left), dtype=np.float64)
         for start in range(0, len(left), batch):
             stop = start + batch
@@ -346,17 +382,15 @@ def score_pairs(
                 matrix[left[start:stop]].multiply(matrix[right[start:stop]]).sum(axis=1)
             ).ravel()
         scores = np.clip(scores, 0, 1)
-        frame = frame.with_columns(pl.Series(f"{name}_score", scores))
-        absorb(name, scores, has)
+        absorb(name, scores, nnz > 0)
+        frame = frame.with_columns(
+            pl.Series(f"{name}_score", scores),
+            # feature count of the sparser document: a pair sharing one feature each
+            # scores cosine 1.0, so the gate needs to know how thin that evidence is
+            pl.Series(f"{name}_min_features", np.minimum(nnz[left], nnz[right]).astype(np.int32)),
+        )
     combined = np.divide(weighted, weight_sum, out=np.zeros_like(weighted), where=weight_sum > 0)
-    gate = (evidence >= settings.corroboration_min_channels) | strong
-    gated = np.where(gate, combined, 0.0)
-    frame = frame.with_columns(
-        pl.Series("evidence_channels", evidence),
-        pl.Series("single_channel_strong", strong),
-        pl.Series("combined", combined),
-        pl.Series("gated", gated),
-    )
+    frame = apply_gate(frame.with_columns(pl.Series("combined", combined)), settings)
     return candidates, frame
 
 
@@ -601,6 +635,35 @@ def main() -> None:
         "--max-pair-contributions", type=int, default=ClusterSettings.max_pair_contributions
     )
     parser.add_argument("--seed", type=int, default=ClusterSettings.seed)
+    parser.add_argument(
+        "--corroboration-min-channels",
+        type=int,
+        default=ClusterSettings.corroboration_min_channels,
+    )
+    parser.add_argument(
+        "--single-channel-title-veto",
+        type=float,
+        default=ClusterSettings.single_channel_title_veto,
+    )
+    parser.add_argument(
+        "--single-channel-min-features",
+        type=int,
+        default=ClusterSettings.single_channel_min_features,
+    )
+    parser.add_argument(
+        "--family-title-threshold", type=float, default=ClusterSettings.family_title_threshold
+    )
+    parser.add_argument(
+        "--family-entity-threshold", type=float, default=ClusterSettings.family_entity_threshold
+    )
+    parser.add_argument(
+        "--family-strong-title", type=float, default=ClusterSettings.family_strong_title
+    )
+    parser.add_argument(
+        "--reuse-pairs",
+        type=Path,
+        help="previous cluster output: skip retrieval/scoring, re-gate its pair_features",
+    )
     args = parser.parse_args()
     settings = ClusterSettings(
         threshold=args.threshold,
@@ -612,11 +675,47 @@ def main() -> None:
         max_feature_articles=args.max_feature_articles,
         max_pair_contributions=args.max_pair_contributions,
         seed=args.seed,
+        corroboration_min_channels=args.corroboration_min_channels,
+        single_channel_title_veto=args.single_channel_title_veto,
+        single_channel_min_features=args.single_channel_min_features,
+        family_title_threshold=args.family_title_threshold,
+        family_entity_threshold=args.family_entity_threshold,
+        family_strong_title=args.family_strong_title,
     )
-    run(args.features, args.embeddings, args.output, settings)
+    run(args.features, args.embeddings, args.output, settings, reuse_pairs=args.reuse_pairs)
 
 
-def run(features: Path, embeddings: Path | None, output: Path, settings: ClusterSettings) -> dict:
+def load_inputs(
+    features: Path, embeddings: Path | None, settings: ClusterSettings
+) -> tuple[pl.DataFrame, pl.DataFrame, TitleChannel | None, dict]:
+    documents = pl.read_parquet(features / "documents.parquet").sort("document_id")
+    links = pl.read_parquet(features / "document_events.parquet")
+    count = documents.height
+    if documents["document_id"].to_list() != list(range(count)):
+        raise ValueError("documents.parquet must have contiguous document_id 0..N-1")
+    title: TitleChannel | None = None
+    embed_meta: dict = {}
+    if "title" in settings.channels.split(",") and embeddings is not None:
+        loaded = load_embeddings(embeddings)
+        if loaded is not None and loaded[0].size:
+            vectors, ids = loaded
+            boilerplate = boilerplate_titles(documents)
+            keep = ~np.isin(ids, boilerplate)
+            languages = documents["language"].fill_null("und").to_numpy()
+            domains = documents["domain"].fill_null("").to_numpy()
+            title = TitleChannel(vectors[keep], ids[keep], count, languages, settings.seed, domains)
+            embed_meta = json.loads((embeddings / "embed.json").read_text())
+            embed_meta["boilerplate_titles_excluded"] = int(len(boilerplate))
+    return documents, links, title, embed_meta
+
+
+def run(
+    features: Path,
+    embeddings: Path | None,
+    output: Path,
+    settings: ClusterSettings,
+    reuse_pairs: Path | None = None,
+) -> dict:
     article = ArticleSettings(
         neighbors=settings.neighbors,
         max_feature_articles=settings.max_feature_articles,
@@ -626,28 +725,12 @@ def run(features: Path, embeddings: Path | None, output: Path, settings: Cluster
     output.mkdir(parents=True, exist_ok=True)
     started = perf_counter()
 
-    documents = pl.read_parquet(features / "documents.parquet").sort("document_id")
-    links = pl.read_parquet(features / "document_events.parquet")
+    documents, links, title, embed_meta = load_inputs(features, embeddings, settings)
     count = documents.height
-    if documents["document_id"].to_list() != list(range(count)):
-        raise ValueError("documents.parquet must have contiguous document_id 0..N-1")
     first_seen = documents["first_seen"].dt.epoch("s").to_numpy().astype(np.float64)
     wanted = [c for c in settings.channels.split(",") if c]
-
-    title: TitleChannel | None = None
-    embed_meta: dict = {}
-    if "title" in wanted and embeddings is not None:
-        loaded = load_embeddings(embeddings)
-        if loaded is not None and loaded[0].size:
-            vectors, ids = loaded
-            boilerplate = boilerplate_titles(documents)
-            keep = ~np.isin(ids, boilerplate)
-            languages = documents["language"].fill_null("und").to_numpy()
-            domains = documents["domain"].fill_null("").to_numpy()
-            title = TitleChannel(vectors[keep], ids[keep], count, languages, settings.seed, domains)
-            title.background_table().write_parquet(output / "title_background.parquet")
-            embed_meta = json.loads((embeddings / "embed.json").read_text())
-            embed_meta["boilerplate_titles_excluded"] = int(len(boilerplate))
+    if title is not None:
+        title.background_table().write_parquet(output / "title_background.parquet")
     resolution_model = "title_multilingual_v1" if title is not None else "legacy_metadata_v1"
 
     builders = {
@@ -663,6 +746,15 @@ def run(features: Path, embeddings: Path | None, output: Path, settings: Cluster
         "documents": count,
         "channels": {},
     }
+    if reuse_pairs is not None:
+        previous = json.loads((reuse_pairs / "run.json").read_text())
+        audit["channels"] = previous["channels"]
+        audit["reused_pairs_from"] = str(reuse_pairs)
+        candidates = pl.read_parquet(reuse_pairs / "candidate_pairs.parquet")
+        pairs = apply_gate(pl.read_parquet(reuse_pairs / "pair_features.parquet"), settings)
+        return partition(
+            candidates, pairs, documents, links, title, settings, output, audit, started
+        )
     proposed: dict[str, np.ndarray] = {}
     sparse_channels: dict[str, sparse.csr_matrix] = {}
     if title is not None:
@@ -701,6 +793,23 @@ def run(features: Path, embeddings: Path | None, output: Path, settings: Cluster
         settings,
         article.scoring_batch_size,
     )
+    return partition(candidates, pairs, documents, links, title, settings, output, audit, started)
+
+
+def partition(
+    candidates: pl.DataFrame,
+    pairs: pl.DataFrame,
+    documents: pl.DataFrame,
+    links: pl.DataFrame,
+    title: TitleChannel | None,
+    settings: ClusterSettings,
+    output: Path,
+    audit: dict,
+    started: float,
+    write_pairs: bool = True,
+) -> dict:
+    """Gate -> Leiden incidents -> story families -> memberships, from scored pairs."""
+    count = documents.height
     edges = pairs.filter(pl.col("gated") >= settings.threshold).select(
         "left", "right", "gated", "combined", "evidence_channels"
     )
@@ -759,8 +868,9 @@ def run(features: Path, embeddings: Path | None, output: Path, settings: Cluster
             "runtime_seconds": perf_counter() - started,
         }
     )
-    candidates.write_parquet(output / "candidate_pairs.parquet")
-    pairs.write_parquet(output / "pair_features.parquet")
+    if write_pairs:
+        candidates.write_parquet(output / "candidate_pairs.parquet")
+        pairs.write_parquet(output / "pair_features.parquet")
     edges.write_parquet(output / "graph_edges.parquet")
     member.write_parquet(output / "incident_memberships.parquet")
     incidents.write_parquet(output / "incidents.parquet")

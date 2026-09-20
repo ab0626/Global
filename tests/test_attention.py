@@ -220,3 +220,53 @@ def test_boilerplate_titles_flags_repeated_domain_titles() -> None:
         }
     )
     assert sorted(boilerplate_titles(documents).tolist()) == list(range(10))
+
+
+def test_gate_vetoes_thin_single_channel_evidence_but_keeps_corroborated_pairs() -> None:
+    from attention.cluster import apply_gate
+
+    frame = pl.DataFrame(
+        {
+            "left": [0, 1, 2, 3, 4],
+            "right": [10, 11, 12, 13, 14],
+            "title_score": [0.05, 0.05, 0.6, 0.45, 0.0],
+            "title_both": [True, True, True, True, False],
+            "event_score": [1.0, 1.0, 0.0, 0.3, 1.0],
+            "event_min_features": [1, 3, 0, 2, 1],
+            "url_score": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "url_min_features": [0, 0, 0, 0, 0],
+            "combined": [0.5, 0.5, 0.6, 0.4, 0.5],
+        }
+    )
+    gated = apply_gate(frame, ClusterSettings())["gated"].to_list()
+    # one shared GlobalEventID with disagreeing titles: blocked twice over
+    assert gated[0] == 0.0
+    # rich event rows but titles disagree: still blocked
+    assert gated[1] == 0.0
+    # a strong title carries a pair on its own
+    assert gated[2] == 0.6
+    # two corroborating channels pass regardless of feature counts
+    assert gated[3] == 0.4
+    # untitled document: the event channel may carry the pair, but only if rich
+    assert gated[4] == 0.0
+    relaxed = ClusterSettings(single_channel_min_features=1, single_channel_title_veto=0.0)
+    assert apply_gate(frame, relaxed)["gated"].to_list()[0] == 0.5
+    assert apply_gate(frame, relaxed)["gated"].to_list()[4] == 0.5
+
+
+def test_evaluation_metrics_on_perfect_and_split_clusterings() -> None:
+    from attention.evaluate import b_cubed, ceaf_e, pairwise_docs
+
+    gold = np.array([0, 0, 0, 1, 1, 2])
+    perfect = b_cubed(gold, gold)
+    assert perfect["f1"] == 1.0 and ceaf_e(gold, gold)["f1"] == 1.0
+    split = np.array([0, 0, 5, 1, 1, 2])
+    b3 = b_cubed(gold, split)
+    assert b3["precision"] == 1.0 and 0.7 < b3["recall"] < 0.9
+    ceaf = ceaf_e(gold, split)
+    assert ceaf["recall"] > ceaf["precision"] and ceaf["f1"] < 1.0
+    pairwise = pairwise_docs(gold, split)
+    assert pairwise["fp"] == 0 and pairwise["fn"] == 2 and pairwise["tp"] == 2
+    merged = np.zeros(6, dtype=np.int64)
+    assert b_cubed(gold, merged)["recall"] == 1.0
+    assert b_cubed(gold, merged)["precision"] < 0.5
