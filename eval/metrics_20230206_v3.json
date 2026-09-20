@@ -1,0 +1,251 @@
+{
+  "clusters": "data/clusters/20230206_v3",
+  "unassigned_rate": 0.09155464273423972,
+  "pairs": {
+    "labelled_pairs": 300,
+    "label_counts": {
+      "same_event": 67,
+      "different": 202,
+      "related": 31
+    },
+    "incident": {
+      "all": {
+        "precision": 0.44871794871794873,
+        "recall": 0.5223880597014925,
+        "f1": 0.4827586206896552,
+        "tp": 35,
+        "fp": 43,
+        "fn": 32,
+        "tn": 190,
+        "n": 300
+      },
+      "split_strong_title": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 1,
+        "fn": 2,
+        "tn": 57,
+        "n": 60
+      },
+      "merged_cross_language": {
+        "precision": 0.3235294117647059,
+        "recall": 1.0,
+        "f1": 0.48888888888888893,
+        "tp": 11,
+        "fp": 23,
+        "fn": 0,
+        "tn": 26,
+        "n": 60
+      },
+      "merged_near_gate": {
+        "precision": 0.5135135135135135,
+        "recall": 0.95,
+        "f1": 0.6666666666666667,
+        "tp": 19,
+        "fp": 18,
+        "fn": 1,
+        "tn": 12,
+        "n": 50
+      },
+      "split_shared_event": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 4,
+        "tn": 36,
+        "n": 40
+      },
+      "easy_negative": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 30,
+        "n": 30
+      },
+      "sibling_incidents": {
+        "precision": 0.8333333333333334,
+        "recall": 0.16666666666666666,
+        "f1": 0.2777777777777778,
+        "tp": 5,
+        "fp": 1,
+        "fn": 25,
+        "tn": 29,
+        "n": 60
+      }
+    },
+    "family": {
+      "all": {
+        "precision": 0.5785123966942148,
+        "recall": 0.7142857142857143,
+        "f1": 0.639269406392694,
+        "tp": 70,
+        "fp": 51,
+        "fn": 28,
+        "tn": 151,
+        "n": 300
+      },
+      "split_strong_title": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 4,
+        "fn": 7,
+        "tn": 49,
+        "n": 60
+      },
+      "merged_cross_language": {
+        "precision": 0.3333333333333333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "tp": 12,
+        "fp": 24,
+        "fn": 0,
+        "tn": 24,
+        "n": 60
+      },
+      "merged_near_gate": {
+        "precision": 0.6486486486486487,
+        "recall": 0.9230769230769231,
+        "f1": 0.7619047619047619,
+        "tp": 24,
+        "fp": 13,
+        "fn": 2,
+        "tn": 11,
+        "n": 50
+      },
+      "split_shared_event": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 12,
+        "tn": 28,
+        "n": 40
+      },
+      "easy_negative": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "tn": 29,
+        "n": 30
+      },
+      "sibling_incidents": {
+        "precision": 0.7727272727272727,
+        "recall": 0.85,
+        "f1": 0.8095238095238095,
+        "tp": 34,
+        "fp": 10,
+        "fn": 6,
+        "tn": 10,
+        "n": 60
+      }
+    },
+    "candidate_recall": {
+      "positives": 98,
+      "in_candidates": 93,
+      "recall": 0.9489795918367347,
+      "note": "pairs were drawn from candidate_pairs, so this is 1.0 by construction unless the run being scored used different retrieval settings"
+    }
+  },
+  "neighborhoods": {
+    "labelled_documents": 300,
+    "incident": {
+      "gold_clusters": 57,
+      "system_clusters": 220,
+      "b_cubed": {
+        "precision": 0.9644444444444443,
+        "recall": 0.24986167247386792,
+        "f1": 0.39689778144011456
+      },
+      "ceaf_e": {
+        "precision": 0.17014581487901642,
+        "recall": 0.656703145147081,
+        "f1": 0.2702677203854413
+      },
+      "pairwise": {
+        "precision": 0.8852459016393442,
+        "recall": 0.05147759771210677,
+        "f1": 0.0972972972972973,
+        "tp": 108,
+        "fp": 14,
+        "fn": 1990
+      }
+    },
+    "family": {
+      "gold_clusters": 20,
+      "system_clusters": 88,
+      "b_cubed": {
+        "precision": 0.9473888888888883,
+        "recall": 0.42801214402545357,
+        "f1": 0.5896374073531453
+      },
+      "ceaf_e": {
+        "precision": 0.12403065001163967,
+        "recall": 0.5457348600512145,
+        "f1": 0.20212402224119058
+      },
+      "pairwise": {
+        "precision": 0.9349544072948328,
+        "recall": 0.3851740545955422,
+        "f1": 0.5455835402625044,
+        "tp": 3076,
+        "fp": 214,
+        "fn": 4910
+      }
+    },
+    "per_neighborhood": {
+      "china_balloon": {
+        "seed_family_id": 22,
+        "sampled": 60,
+        "family_precision": 1.0,
+        "family_recall_within_sample": 0.7407407407407407,
+        "gold_incidents": 13,
+        "system_incidents_in_story": 41
+      },
+      "grammys": {
+        "seed_family_id": 157,
+        "sampled": 60,
+        "family_precision": null,
+        "family_recall_within_sample": 0.0,
+        "gold_incidents": 9,
+        "system_incidents_in_story": 38
+      },
+      "state_of_the_union": {
+        "seed_family_id": 4668,
+        "sampled": 60,
+        "family_precision": null,
+        "family_recall_within_sample": 0.0,
+        "gold_incidents": 6,
+        "system_incidents_in_story": 40
+      },
+      "turkey_quake": {
+        "seed_family_id": 6214,
+        "sampled": 60,
+        "family_precision": null,
+        "family_recall_within_sample": 0.0,
+        "gold_incidents": 9,
+        "system_incidents_in_story": 54
+      },
+      "zelensky_visit": {
+        "seed_family_id": 31345,
+        "sampled": 60,
+        "family_precision": null,
+        "family_recall_within_sample": 0.0,
+        "gold_incidents": 4,
+        "system_incidents_in_story": 33
+      }
+    }
+  }
+}
