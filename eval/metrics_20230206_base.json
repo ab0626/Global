@@ -1,0 +1,256 @@
+{
+  "clusters": "data/clusters/20230206_fam",
+  "unassigned_rate": 0.08103959665921964,
+  "pairs": {
+    "labelled_pairs": 300,
+    "label_counts": {
+      "same_event": 67,
+      "different": 202,
+      "related": 31
+    },
+    "incident": {
+      "all": {
+        "precision": 0.31958762886597936,
+        "recall": 0.4626865671641791,
+        "f1": 0.3780487804878048,
+        "tp": 31,
+        "fp": 66,
+        "fn": 36,
+        "tn": 167,
+        "n": 300
+      },
+      "split_strong_title": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "tn": 58,
+        "n": 60
+      },
+      "merged_cross_language": {
+        "precision": 0.21153846153846154,
+        "recall": 1.0,
+        "f1": 0.34920634920634924,
+        "tp": 11,
+        "fp": 41,
+        "fn": 0,
+        "tn": 8,
+        "n": 60
+      },
+      "merged_near_gate": {
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "f1": 0.6153846153846153,
+        "tp": 20,
+        "fp": 25,
+        "fn": 0,
+        "tn": 5,
+        "n": 50
+      },
+      "split_shared_event": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 4,
+        "tn": 36,
+        "n": 40
+      },
+      "easy_negative": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 30,
+        "n": 30
+      },
+      "sibling_incidents": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 30,
+        "tn": 30,
+        "n": 60
+      }
+    },
+    "family": {
+      "all": {
+        "precision": 0.4968152866242038,
+        "recall": 0.7959183673469388,
+        "f1": 0.6117647058823529,
+        "tp": 78,
+        "fp": 79,
+        "fn": 20,
+        "tn": 123,
+        "n": 300
+      },
+      "split_strong_title": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 7,
+        "tn": 53,
+        "n": 60
+      },
+      "merged_cross_language": {
+        "precision": 0.23076923076923078,
+        "recall": 1.0,
+        "f1": 0.375,
+        "tp": 12,
+        "fp": 40,
+        "fn": 0,
+        "tn": 8,
+        "n": 60
+      },
+      "merged_near_gate": {
+        "precision": 0.5777777777777777,
+        "recall": 1.0,
+        "f1": 0.732394366197183,
+        "tp": 26,
+        "fp": 19,
+        "fn": 0,
+        "tn": 5,
+        "n": 50
+      },
+      "split_shared_event": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 12,
+        "tn": 28,
+        "n": 40
+      },
+      "easy_negative": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "tn": 29,
+        "n": 30
+      },
+      "sibling_incidents": {
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "tp": 40,
+        "fp": 20,
+        "fn": 0,
+        "tn": 0,
+        "n": 60
+      }
+    },
+    "candidate_recall": {
+      "positives": 98,
+      "in_candidates": 98,
+      "recall": 1.0,
+      "note": "pairs were drawn from candidate_pairs, so this is 1.0 by construction unless the run being scored used different retrieval settings"
+    }
+  },
+  "neighborhoods": {
+    "labelled_documents": 300,
+    "incident": {
+      "gold_clusters": 57,
+      "system_clusters": 221,
+      "b_cubed": {
+        "precision": 0.9566666666666669,
+        "recall": 0.24784510259388326,
+        "f1": 0.3936950293042089
+      },
+      "ceaf_e": {
+        "precision": 0.1666349691433303,
+        "recall": 0.6460759329943158,
+        "f1": 0.26493761281061873
+      },
+      "pairwise": {
+        "precision": 0.831858407079646,
+        "recall": 0.044804575786463297,
+        "f1": 0.08502939846223428,
+        "tp": 94,
+        "fp": 19,
+        "fn": 2004
+      }
+    },
+    "family": {
+      "gold_clusters": 20,
+      "system_clusters": 79,
+      "b_cubed": {
+        "precision": 0.9377222222222222,
+        "recall": 0.49335999641504763,
+        "f1": 0.6465521353963913
+      },
+      "ceaf_e": {
+        "precision": 0.13030661438694832,
+        "recall": 0.5147111268284459,
+        "f1": 0.2079640916478569
+      },
+      "pairwise": {
+        "precision": 0.9213255755122691,
+        "recall": 0.4560480841472577,
+        "f1": 0.6101013485216517,
+        "tp": 3642,
+        "fp": 311,
+        "fn": 4344
+      }
+    },
+    "per_neighborhood": {
+      "china_balloon": {
+        "majority_family_id": 22,
+        "majority_family_share": 0.7407407407407407,
+        "sampled": 60,
+        "family_precision": 1.0,
+        "family_recall_within_sample": 0.7407407407407407,
+        "gold_incidents": 13,
+        "system_incidents_in_story": 42
+      },
+      "grammys": {
+        "majority_family_id": 157,
+        "majority_family_share": 0.6551724137931034,
+        "sampled": 60,
+        "family_precision": 0.95,
+        "family_recall_within_sample": 0.6551724137931034,
+        "gold_incidents": 9,
+        "system_incidents_in_story": 38
+      },
+      "state_of_the_union": {
+        "majority_family_id": 4668,
+        "majority_family_share": 0.6666666666666666,
+        "sampled": 60,
+        "family_precision": 0.95,
+        "family_recall_within_sample": 0.6666666666666666,
+        "gold_incidents": 6,
+        "system_incidents_in_story": 41
+      },
+      "turkey_quake": {
+        "majority_family_id": 6214,
+        "majority_family_share": 0.6724137931034483,
+        "sampled": 60,
+        "family_precision": 0.975,
+        "family_recall_within_sample": 0.6724137931034483,
+        "gold_incidents": 9,
+        "system_incidents_in_story": 55
+      },
+      "zelensky_visit": {
+        "majority_family_id": 31345,
+        "majority_family_share": 0.6491228070175439,
+        "sampled": 60,
+        "family_precision": 0.925,
+        "family_recall_within_sample": 0.6491228070175439,
+        "gold_incidents": 4,
+        "system_incidents_in_story": 32
+      }
+    }
+  }
+}

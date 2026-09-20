@@ -1,3 +1,10 @@
 .venv/
-v0/data/
 __pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+/data/
+/results/
+/src/
+v0/data/
+*.part
