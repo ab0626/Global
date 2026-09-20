@@ -97,6 +97,26 @@ day. On a CPU-only box: preprocess ≈ 10 min, embedding ≈ 38 min per 0.9 M ti
 shards and resume after interruption), full clustering ≈ 61 min, re-gating from
 cached pair features ≈ 8.5 min, materialize ≈ 4 min.
 
+### Deploy
+
+The globe is a static Vite site and the API is a small FastAPI process over
+Parquet; deploy them separately (the ML dependencies are only needed to *build*
+a store, not to serve one).
+
+```sh
+# API host (any box with the store; ~100 MB of deps, no torch/faiss)
+uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python \
+  "polars==1.31.0" "numpy==2.2.6" "fastapi>=0.141.1" "uvicorn>=0.52.4"
+GDELT_ATTENTION_DATA=data/store/20230206_v5 .venv/bin/uvicorn api.app:app --host 0.0.0.0 --port 8000
+```
+
+Frontend on Vercel: set **Root Directory** to `web` (framework Vite; build
+`npm run build`, output `dist`) and the environment variable
+`VITE_API_BASE=https://<api-host>` — the bundle calls
+`${VITE_API_BASE}/api/v2/attention/...` directly (the API sends
+`Access-Control-Allow-Origin: *`), so the host must be HTTPS to avoid
+mixed-content blocking. `web/vercel.json` redirects `/` to `/spread.html`.
+
 ## Pipeline
 
 | Stage | Module | Output |
