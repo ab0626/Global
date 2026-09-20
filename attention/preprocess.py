@@ -126,7 +126,48 @@ EVENT_FLOATS = [
     "ActionGeo_Long",
 ]
 TRACKING_PARAMS = {"fbclid", "gclid", "ref", "source", "cmp", "ncid", "ito", "mc_cid", "mc_eid"}
-GENERIC_TWO_LETTER = {"co", "io", "me", "tv", "fm", "ai", "ly", "to", "cc", "ws", "gg", "am"}
+GENERIC_TWO_LETTER = {
+    "co",
+    "io",
+    "me",
+    "tv",
+    "fm",
+    "ai",
+    "ly",
+    "to",
+    "cc",
+    "ws",
+    "gg",
+    "am",
+    "eu",
+    "su",
+}
+# ccTLD (ISO 3166-1 alpha-2) -> FIPS 10-4, the code system GDELT uses everywhere
+# (ISO 'GE' is Georgia but FIPS 'GE' is Germany, so codes must not be mixed).
+# Only the codes that differ are listed; identical codes fall through.
+ISO2_TO_FIPS = {
+    "AD": "AN", "AG": "AC", "AI": "AV", "AQ": "AY", "AS": "AQ", "AT": "AU", "AU": "AS",
+    "AW": "AA", "AZ": "AJ", "BA": "BK", "BD": "BG", "BF": "UV", "BG": "BU", "BH": "BA",
+    "BI": "BY", "BJ": "BN", "BL": "TB", "BM": "BD", "BN": "BX", "BO": "BL", "BS": "BF",
+    "BW": "BC", "BY": "BO", "BZ": "BH", "CC": "CK", "CD": "CG", "CF": "CT", "CG": "CF",
+    "CH": "SZ", "CI": "IV", "CK": "CW", "CL": "CI", "CN": "CH", "CR": "CS", "CX": "KT",
+    "CZ": "EZ", "DE": "GM", "DK": "DA", "DM": "DO", "DO": "DR", "DZ": "AG", "EE": "EN",
+    "ES": "SP", "GA": "GB", "GB": "UK", "GD": "GJ", "GE": "GG", "GF": "FG", "GG": "GK",
+    "GM": "GA", "GN": "GV", "GQ": "EK", "GS": "SX", "GU": "GQ", "GW": "PU", "HN": "HO",
+    "HT": "HA", "IE": "EI", "IL": "IS", "IQ": "IZ", "IS": "IC", "JP": "JA", "KH": "CB",
+    "KI": "KR", "KM": "CN", "KN": "SC", "KP": "KN", "KR": "KS", "KW": "KU", "KY": "CJ",
+    "LB": "LE", "LC": "ST", "LI": "LS", "LK": "CE", "LR": "LI", "LS": "LT", "LT": "LH",
+    "LV": "LG", "MA": "MO", "MC": "MN", "ME": "MJ", "MG": "MA", "MH": "RM", "MM": "BM",
+    "MN": "MG", "MO": "MC", "MP": "CQ", "MQ": "MB", "MS": "MH", "MU": "MP", "MW": "MI",
+    "NA": "WA", "NE": "NG", "NG": "NI", "NI": "NU", "NU": "NE", "OM": "MU", "PA": "PM",
+    "PF": "FP", "PG": "PP", "PH": "RP", "PM": "SB", "PN": "PC", "PR": "RQ", "PS": "WE",
+    "PT": "PO", "PW": "PS", "PY": "PA", "RS": "RI", "RU": "RS", "SB": "BP", "SC": "SE",
+    "SD": "SU", "SE": "SW", "SG": "SN", "SK": "LO", "SN": "SG", "SR": "NS", "SS": "OD",
+    "ST": "TP", "SV": "ES", "SZ": "WZ", "TC": "TK", "TD": "CD", "TG": "TO", "TJ": "TI",
+    "TK": "TL", "TL": "TT", "TM": "TX", "TN": "TS", "TO": "TN", "TR": "TU", "TT": "TD",
+    "UA": "UP", "VA": "VT", "VG": "VI", "VI": "VQ", "VN": "VM", "VU": "NH", "YE": "YM",
+    "YT": "MF", "ZA": "SF", "ZM": "ZA", "ZW": "ZI",
+}  # fmt: skip
 
 
 def parse_yyyymmdd(text: str) -> datetime:
@@ -419,8 +460,8 @@ def resolve_country(
             return lookup[parent][0], 0.7, "gdelt_lookup_parent"
     tld = labels[-1] if labels else ""
     if len(tld) == 2 and tld.isalpha() and tld not in GENERIC_TWO_LETTER:
-        code = {"uk": "UK"}.get(tld, tld.upper())
-        return code, 0.5, "cctld"
+        iso = tld.upper()
+        return ISO2_TO_FIPS.get(iso, iso), 0.5, "cctld"
     return None, 0.0, "unresolved"
 
 

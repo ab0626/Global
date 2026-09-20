@@ -128,7 +128,8 @@ class AttentionStore:
     def search(self, q: str) -> pl.DataFrame:
         """Macro-events whose summary text or member titles contain every query token.
 
-        Ranked by the number of matching member titles, then effective reports."""
+        Ranked by matching member titles, then publisher-country breadth, then
+        effective reports."""
         tokens = [t for t in fold(q).split() if t]
         if not tokens:
             return self.macro_events.head(0).with_columns(pl.lit(0).alias("title_hits"))
@@ -142,7 +143,10 @@ class AttentionStore:
             self.macro_events.join(title_hits, on="macro_event_id", how="left")
             .with_columns(pl.col("title_hits").fill_null(0))
             .filter(summary_hit | (pl.col("title_hits") > 0))
-            .sort(["title_hits", "effective_reports"], descending=[True, True])
+            .sort(
+                ["title_hits", "publisher_country_count", "effective_reports"],
+                descending=[True, True, True],
+            )
         )
 
     def envelope(self, payload: dict) -> dict:

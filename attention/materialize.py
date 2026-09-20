@@ -41,6 +41,7 @@ import numpy as np
 import polars as pl
 
 from attention.embed import load_embeddings
+from attention.preprocess import load_domain_lookup
 from clustering_experiment import url_words
 from clustering_v2 import clean_token
 
@@ -252,6 +253,34 @@ def top_list(column: str, k: int = 5) -> pl.Expr:
     )
 
 
+def country_centroids(gkg: pl.DataFrame) -> pl.DataFrame:
+    """Representative (lat, lon) per FIPS country code, taken as the median of the
+    coordinates GDELT attaches to country-level (geo_type 1) location mentions;
+    used only to place publisher-country markers."""
+    return (
+        gkg.select(pl.col("locations").explode())
+        .unnest("locations")
+        .filter((pl.col("geo_type") == 1) & pl.col("country_code").is_not_null())
+        .group_by(pl.col("country_code").alias("publisher_country"))
+        .agg(pl.col("lat").median(), pl.col("lon").median())
+    )
+
+
+def country_names(lookup_path: Path | None) -> pl.DataFrame:
+    """FIPS code -> most common display name in the GDELT domain list (empty when
+    no list is given; the API then falls back to the code)."""
+    if lookup_path is None:
+        return pl.DataFrame(schema={"publisher_country": pl.String, "country_name": pl.String})
+    pairs = list(load_domain_lookup(lookup_path).values())
+    return (
+        pl.DataFrame(
+            {"publisher_country": [c for c, _ in pairs], "country_name": [n for _, n in pairs]}
+        )
+        .group_by("publisher_country")
+        .agg(pl.col("country_name").mode().first())
+    )
+
+
 def country_tables(
     docs: pl.DataFrame, baseline: pl.DataFrame, world_docs: int, world_reports: int
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
@@ -280,7 +309,15 @@ def country_tables(
         .with_columns(
             (pl.col("time_bucket") == pl.col("onset")).fill_null(False).alias("onset_flag")
         )
-        .drop("onset", "country_documents", "country_domains", "country_effective_reports")
+        .drop(
+            "onset",
+            "country_documents",
+            "country_domains",
+            "country_effective_reports",
+            "lat",
+            "lon",
+            "country_name",
+        )
     )
     world_onset = onset(docs, ["macro_event_id"]).select(
         "macro_event_id", pl.col("onset").alias("world_onset")
@@ -331,6 +368,9 @@ def main() -> None:
     parser.add_argument("--min-confidence", type=float, default=0.5)
     parser.add_argument("--min-effective-reports", type=int, default=5)
     parser.add_argument("--min-country-confidence", type=float, default=0.5)
+    parser.add_argument(
+        "--domain-lookup", type=Path, help="GDELT domain list; supplies country display names"
+    )
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
 
@@ -533,10 +573,19 @@ def main() -> None:
         pl.col("publisher_country").is_not_null()
         & (pl.col("publisher_country_confidence") >= args.min_country_confidence)
     )
-    baseline = resolved.group_by("publisher_country").agg(
-        pl.len().alias("country_documents"),
-        pl.col("domain").n_unique().alias("country_domains"),
-        pl.col("wire_group").n_unique().alias("country_effective_reports"),
+    baseline = (
+        resolved.group_by("publisher_country")
+        .agg(
+            pl.len().alias("country_documents"),
+            pl.col("domain").n_unique().alias("country_domains"),
+            pl.col("wire_group").n_unique().alias("country_effective_reports"),
+        )
+        .join(
+            country_centroids(pl.read_parquet(args.clean / "gkg.parquet", columns=["locations"])),
+            on="publisher_country",
+            how="left",
+        )
+        .join(country_names(args.domain_lookup), on="publisher_country", how="left")
     )
     world_documents = documents.height
     world_reports = documents["wire_group"].n_unique()

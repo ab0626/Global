@@ -42,8 +42,24 @@ def test_resolve_country_fallbacks() -> None:
     lookup = {"bbc.co.uk": ("UK", "BBC"), "example.com": ("US", "Example")}
     assert resolve_country("bbc.co.uk", lookup) == ("UK", 0.9, "gdelt_lookup")
     assert resolve_country("news.example.com", lookup) == ("US", 0.7, "gdelt_lookup_parent")
-    assert resolve_country("zeitung.de", lookup) == ("DE", 0.5, "cctld")
     assert resolve_country("unknown.org", lookup) == (None, 0.0, "unresolved")
+
+
+def test_cctld_fallback_emits_fips_not_iso() -> None:
+    """ccTLDs are ISO 3166 but GDELT codes are FIPS 10-4; mixing them would put
+    German (.de) outlets under FIPS "DE" (unassigned) and Georgian
+    (.ge) ones under FIPS 'GE' == Germany."""
+    for domain, fips in [
+        ("zeitung.de", "GM"),
+        ("news.ge", "GG"),
+        ("asahi.jp", "JA"),
+        ("hurriyet.com.tr", "TU"),
+        ("pravda.ua", "UP"),
+        ("bbc.co.uk", "UK"),
+        ("lemonde.fr", "FR"),
+    ]:
+        assert resolve_country(domain, {}) == (fips, 0.5, "cctld"), domain
+    assert resolve_country("news.eu", {}) == (None, 0.0, "unresolved")
 
 
 def ts(hour: int, minute: int = 0) -> datetime:
