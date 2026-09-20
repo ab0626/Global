@@ -115,8 +115,9 @@ body,
 
 .spread-main {
   display: grid;
-  grid-template-columns: minmax(340px, 420px) 1fr;
+  grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
   min-height: 0;
+  min-width: 0;
 }
 
 .spread-side {
@@ -296,6 +297,7 @@ body,
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   padding: 12px 24px;
 }
 
@@ -471,14 +473,16 @@ body,
 
 .controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   padding: 8px 0 4px;
   font-size: 13px;
 }
 
 .controls input[type="range"] {
-  flex: 1;
+  flex: 1 1 160px;
+  min-width: 120px;
   accent-color: var(--red);
 }
 
@@ -491,7 +495,7 @@ body,
 
 .clock {
   font-variant-numeric: tabular-nums;
-  min-width: 140px;
+  white-space: nowrap;
 }
 
 .spread-footer {

@@ -67,6 +67,7 @@ export default function App() {
   const [arcs, setArcs] = useState(true);
   const globeConfig = useMemo<Partial<GlobeConfig>>(() => ({ background, arcs }), [background, arcs]);
   const abort = useRef<AbortController | null>(null);
+  const side = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     countries()
@@ -83,6 +84,11 @@ export default function App() {
     setStatus({ kind: "loading", what: "searching" });
     setResults(null);
     setExpanded(new Map());
+    abort.current?.abort();
+    setPlaying(false);
+    setPlayhead(0);
+    setLoaded(null);
+    side.current?.scrollTo({ top: 0 });
     try {
       const r = await search(text);
       setResults(r.families);
@@ -204,7 +210,7 @@ export default function App() {
       </header>
 
       <main className="spread-main">
-        <aside className="spread-side">
+        <aside className="spread-side" ref={side}>
           {status.kind === "error" && <div className="notice error">{status.message}</div>}
           {status.kind === "loading" && <div className="notice">{status.what}…</div>}
           {results && results.length === 0 && (
