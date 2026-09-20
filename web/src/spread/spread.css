@@ -913,6 +913,14 @@ body,
   color: #9a9a9a;
 }
 
+.analytics tr.active td {
+  background: var(--grey-bg);
+}
+
+.analytics tr.active td:first-child {
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
 .analytics.events td:first-child {
   max-width: 260px;
 }
@@ -999,7 +1007,6 @@ body,
   line-height: 1.5;
 }
 
-.spread-app.dark .tab,
 .spread-app.dark .filter-grid select,
 .spread-app.dark .filter-grid input {
   background: #fff;

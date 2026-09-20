@@ -300,6 +300,7 @@ class Filters:
     destinations: tuple[str, ...] = ()
     event_types: tuple[str, ...] = ()
     min_event_effective_reports: int = 0
+    max_event_effective_reports: int | None = None
     start: datetime | None = None
     end: datetime | None = None
     resolution_model: str | None = None
@@ -312,6 +313,7 @@ class Filters:
             "destinations": list(self.destinations),
             "event_types": list(self.event_types),
             "min_event_effective_reports": self.min_event_effective_reports,
+            "max_event_effective_reports": self.max_event_effective_reports,
             "start": self.start.isoformat() if self.start else None,
             "end": self.end.isoformat() if self.end else None,
             "resolution_model": self.resolution_model,
@@ -360,6 +362,10 @@ def apply_filters(observations: pl.DataFrame, filters: Filters) -> pl.DataFrame:
     if filters.min_event_effective_reports > 0:
         frame = frame.filter(
             pl.col("event_effective_reports") >= filters.min_event_effective_reports
+        )
+    if filters.max_event_effective_reports is not None:
+        frame = frame.filter(
+            pl.col("event_effective_reports") < filters.max_event_effective_reports
         )
     if filters.start is not None:
         frame = frame.filter(pl.col("event_start") >= pl.lit(filters.start))
@@ -507,7 +513,14 @@ def summarize_by_magnitude(frame: pl.DataFrame, support: Support) -> list[dict]:
             cond &= pl.col("event_effective_reports") < high
         group = frame.filter(cond)
         if group.height:
-            out.append({"magnitude": label, **summarize(group, support)})
+            out.append(
+                {
+                    "magnitude": label,
+                    "min_event_effective_reports": low,
+                    "max_event_effective_reports": high,
+                    **summarize(group, support),
+                }
+            )
     return out
 
 

@@ -256,7 +256,11 @@ export type ResponseSummary = {
 };
 
 export type TypeSummary = ResponseSummary & { event_types: string };
-export type MagnitudeSummary = ResponseSummary & { magnitude: string };
+export type MagnitudeSummary = ResponseSummary & {
+  magnitude: string;
+  min_event_effective_reports: number;
+  max_event_effective_reports: number | null;
+};
 export type OriginSummary = ResponseSummary & { origin_country: string; origin_country_name?: string };
 export type DestinationSummary = ResponseSummary & {
   destination_country: string;
@@ -267,6 +271,7 @@ export type AnalyticsFilters = {
   level: "family" | "incident";
   event_types: string[];
   min_event_effective_reports: number;
+  max_event_effective_reports: number | null;
   start: string | null;
   end: string | null;
   resolution_model: string | null;
@@ -377,6 +382,7 @@ export type AnalyticsQuery = {
   level: "family" | "incident";
   event_type?: string[];
   min_event_effective_reports?: number;
+  max_event_effective_reports?: number;
   start?: string;
   end?: string;
   reference: "origin_preferred" | "origin_only" | "world";
@@ -433,9 +439,11 @@ export function analyticsOrigin(code: string, q: AnalyticsQuery) {
   return getMulti<OriginView>(`/origins/${code}`, { ...q });
 }
 
+/** Observations behind an aggregate. Either side may be omitted (all origins /
+ * all destinations); `kind` narrows to foreign or domestic rows. */
 export function analyticsEvents(
-  origin: string,
-  destination: string,
+  origin: string | undefined,
+  destination: string | undefined,
   kind: "all" | "foreign" | "domestic",
   q: AnalyticsQuery,
   limit = 500,

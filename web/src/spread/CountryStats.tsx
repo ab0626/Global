@@ -9,11 +9,13 @@ import {
   type CountryBaseline,
   type CountryOverview,
   type EventsResponse,
+  type MagnitudeSummary,
   type MatrixCell,
   type MatrixResponse,
   type PairResponse,
   type ResponseEvent,
   type ResponseSummary,
+  type TypeSummary,
 } from "./api";
 
 /** What the globe should show for the current analytics selection. `focus` is the blue
@@ -118,6 +120,7 @@ export function CountryStats({ baseline, onScene, onOpenEvent, utc }: Props) {
   const [pair, setPair] = useState<PairResponse | null>(null);
   const [matrix, setMatrix] = useState<MatrixResponse | null>(null);
   const [drill, setDrill] = useState<{ cell: MatrixCell; events: EventsResponse } | null>(null);
+  const [breakdown, setBreakdown] = useState<Breakdown | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "median", desc: false });
   const request = useRef(0);
   const query = useMemo(() => toQuery(filters), [filters]);
@@ -150,6 +153,7 @@ export function CountryStats({ baseline, onScene, onOpenEvent, utc }: Props) {
         setMatrix(r);
       }
       setDrill(null);
+      setBreakdown(null);
     };
     run()
       .then(() => {
@@ -192,6 +196,19 @@ export function CountryStats({ baseline, onScene, onOpenEvent, utc }: Props) {
         query,
       );
       setDrill({ cell, events });
+    } catch (e) {
+      setStatus({ key: selectionKey, kind: "error", message: (e as Error).message });
+    }
+  }
+
+  async function openBreakdown(title: string, args: BreakdownArgs) {
+    if (breakdown?.title === title) {
+      setBreakdown(null);
+      return;
+    }
+    try {
+      const events = await analyticsEvents(args.origin, args.destination, args.kind, { ...query, ...args.narrow });
+      setBreakdown({ title, events });
     } catch (e) {
       setStatus({ key: selectionKey, kind: "error", message: (e as Error).message });
     }
@@ -339,7 +356,14 @@ export function CountryStats({ baseline, onScene, onOpenEvent, utc }: Props) {
       {loading && <div className="notice">computing…</div>}
 
       {mode === "overview" && overview && (
-        <OverviewPanel data={overview} onOrigin={(o) => showPair(o, overview.publisher_country)} />
+        <OverviewPanel
+          data={overview}
+          onOrigin={(o) => showPair(o, overview.publisher_country)}
+          breakdown={breakdown}
+          onBreakdown={openBreakdown}
+          utc={utc}
+          onOpenEvent={onOpenEvent}
+        />
       )}
       {mode === "pair" && pair && (
         <PairPanel data={pair} utc={utc} onOpenEvent={onOpenEvent} onReverse={() => showPair(destination, origin)} />
@@ -524,11 +548,13 @@ function BreakdownTable<T extends ResponseSummary>({
   rows,
   label,
   onRow,
+  isActive,
 }: {
   title: string;
   rows: T[];
   label: (row: T) => string;
   onRow?: (row: T) => void;
+  isActive?: (row: T) => boolean;
 }) {
   if (rows.length === 0) return null;
   return (
@@ -548,7 +574,11 @@ function BreakdownTable<T extends ResponseSummary>({
           {rows.map((r, i) => {
             const ok = r.support.status === "ok";
             return (
-              <tr key={i} className={ok ? "" : "pending"} onClick={onRow ? () => onRow(r) : undefined}>
+              <tr
+                key={i}
+                className={`${ok ? "" : "pending"} ${isActive?.(r) ? "active" : ""}`}
+                onClick={onRow ? () => onRow(r) : undefined}
+              >
                 <td>{onRow ? <button className="link">{label(r)}</button> : label(r)}</td>
                 <td>{ok ? hours(r.median_response_hours) : "n/s"}</td>
                 <td>{ok ? hours(r.mean_response_hours) : "n/s"}</td>
@@ -567,7 +597,49 @@ function BreakdownTable<T extends ResponseSummary>({
 
 /* ----------------------------------------------------------------- overview */
 
-function OverviewPanel({ data, onOrigin }: { data: CountryOverview; onOrigin: (code: string) => void }) {
+/** Events behind one breakdown row (event type or event-size bin). */
+type Breakdown = { title: string; events: EventsResponse };
+
+type BreakdownArgs = {
+  origin?: string;
+  destination?: string;
+  kind: "foreign" | "domestic";
+  narrow: Partial<AnalyticsQuery>;
+};
+
+function OverviewPanel({
+  data,
+  onOrigin,
+  breakdown,
+  onBreakdown,
+  utc,
+  onOpenEvent,
+}: {
+  data: CountryOverview;
+  onOrigin: (code: string) => void;
+  breakdown: Breakdown | null;
+  onBreakdown: (title: string, args: BreakdownArgs) => void;
+  utc: (iso: string) => string;
+  onOpenEvent: Props["onOpenEvent"];
+}) {
+  const me = data.publisher_country;
+  const typeLabel = (r: TypeSummary) => r.event_types.replaceAll("_", " ");
+  const byType = (kind: "foreign" | "domestic") => (r: TypeSummary) =>
+    onBreakdown(`${data.publisher_country_name} · ${kind} · ${typeLabel(r)}`, {
+      destination: me,
+      kind,
+      narrow: { event_type: [r.event_types] },
+    });
+  const bySize = (r: MagnitudeSummary) =>
+    onBreakdown(`${data.publisher_country_name} · foreign · ${r.magnitude}`, {
+      destination: me,
+      kind: "foreign",
+      narrow: {
+        min_event_effective_reports: Math.max(r.min_event_effective_reports, data.filters.min_event_effective_reports),
+        max_event_effective_reports: r.max_event_effective_reports ?? undefined,
+      },
+    });
+  const active = (title: string) => breakdown?.title === title;
   return (
     <section className="detail">
       <h2>{data.publisher_country_name}</h2>
@@ -579,14 +651,43 @@ function OverviewPanel({ data, onOrigin }: { data: CountryOverview; onOrigin: (c
         label={(r) => r.origin_country_name ?? r.origin_country}
         onRow={(r) => onOrigin(r.origin_country)}
       />
-      <BreakdownTable title="Foreign response by event type" rows={data.by_event_type} label={(r) => r.event_types.replaceAll("_", " ")} />
-      <BreakdownTable title="Foreign response by event size" rows={data.by_magnitude} label={(r) => r.magnitude} />
+      <BreakdownTable
+        title="Foreign response by event type"
+        rows={data.by_event_type}
+        label={typeLabel}
+        onRow={byType("foreign")}
+        isActive={(r) => active(`${data.publisher_country_name} · foreign · ${typeLabel(r)}`)}
+      />
+      <BreakdownTable
+        title="Foreign response by event size"
+        rows={data.by_magnitude}
+        label={(r) => r.magnitude}
+        onRow={bySize}
+        isActive={(r) => active(`${data.publisher_country_name} · foreign · ${r.magnitude}`)}
+      />
       <BreakdownTable
         title="Domestic response by event type"
         rows={data.domestic_by_event_type}
-        label={(r) => r.event_types.replaceAll("_", " ")}
+        label={typeLabel}
+        onRow={byType("domestic")}
+        isActive={(r) => active(`${data.publisher_country_name} · domestic · ${typeLabel(r)}`)}
       />
-      <p className="muted small">n/s = insufficient support under the current gate; coverage is still shown.</p>
+      <p className="muted small">
+        n/s = insufficient support under the current gate; coverage is still shown. Origin rows open the
+        country pair; type and size rows list the events behind them.
+      </p>
+      {breakdown && (
+        <div className="drill">
+          <h3>{breakdown.title}</h3>
+          <EventsTable
+            title={`Events behind this row (${breakdown.events.total})`}
+            events={breakdown.events.events}
+            utc={utc}
+            onOpenEvent={onOpenEvent}
+            compact
+          />
+        </div>
+      )}
     </section>
   );
 }

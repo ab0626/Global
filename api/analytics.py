@@ -78,6 +78,9 @@ def request_params(
     min_event_effective_reports: Annotated[
         int, Query(ge=0, description="event magnitude floor")
     ] = 0,
+    max_event_effective_reports: Annotated[
+        int | None, Query(ge=1, description="event magnitude ceiling (exclusive)")
+    ] = None,
     start: Annotated[
         datetime | None, Query(description="events observed from this UTC time")
     ] = None,
@@ -94,6 +97,7 @@ def request_params(
             level=level,
             event_types=tuple(t for t in (event_type or []) if t),
             min_event_effective_reports=min_event_effective_reports,
+            max_event_effective_reports=max_event_effective_reports,
             start=start,
             end=end,
             resolution_model=resolution_model,

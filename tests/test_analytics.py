@@ -36,6 +36,7 @@ from attention.analytics import (
     foreign,
     pair_matrix,
     summarize,
+    summarize_by_magnitude,
     summarize_by_type,
     wilson_interval,
 )
@@ -322,6 +323,9 @@ def test_filters_compose_with_and(observations: pl.DataFrame) -> None:
         observations, event_types=("natural_disaster",), min_event_effective_reports=100
     )
     assert both["event_id"].unique().to_list() == [1]
+    small = family_level(observations, max_event_effective_reports=60)
+    every = set(family_level(observations)["event_id"].unique())
+    assert set(small["event_id"].unique()) == every - {1, 3, 5}
     assert family_level(observations, resolution_model="other").height == 0
     scoped = family_level(observations, origins=("B",), destinations=("A", "C"))
     assert set(scoped["destination_country"]) == {"A", "C"} and set(scoped["origin_country"]) == {
@@ -339,6 +343,26 @@ def test_breakdown_by_event_type(observations: pl.DataFrame) -> None:
     assert rows["natural_disaster"]["median_response_hours"] == pytest.approx(2.0)
     assert rows["politics_government"]["eligible_events"] == 2
     assert rows["death"]["covered_events"] == 1
+
+
+def test_magnitude_rows_match_their_bin_filters(observations: pl.DataFrame) -> None:
+    """Every event-size row carries the bounds that reproduce it through ``Filters``, so a
+    drilldown on the row lists exactly the events that were aggregated."""
+    frame = family_level(observations, destinations=("B",))
+    rows = summarize_by_magnitude(frame.filter(~pl.col("is_domestic")), LOOSE)
+    assert rows, "synthetic events should span at least one size bin"
+    for row in rows:
+        drill = apply_filters(
+            observations,
+            Filters(
+                destinations=("B",),
+                min_event_effective_reports=row["min_event_effective_reports"],
+                max_event_effective_reports=row["max_event_effective_reports"],
+            ),
+        ).filter(~pl.col("is_domestic"))
+        assert drill.height == row["eligible_events"]
+        assert int(drill["covered"].sum()) == row["covered_events"]
+    assert sum(r["eligible_events"] for r in rows) == frame.filter(~pl.col("is_domestic")).height
 
 
 def test_cli_materializes_and_loader_prefers_the_file(tmp_path: Path, monkeypatch) -> None:
