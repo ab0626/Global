@@ -12,6 +12,9 @@ Tables written to ``--output``:
 * ``country_event_attention.parquet`` macro-event x publisher-country x hour.
 * ``country_event_summary.parquet``   macro-event x publisher-country totals, raw and
   effective shares, attention ratio, onset ingredients and lag versus world onset.
+* ``document_evidence.parquet``       per macro-event document, its strongest
+  supporting graph edges (same incident) and its strongest competing edge (other
+  incident), with per-channel scores -- the "why is this article here" lineage.
 * ``country_baseline.parquet``        per-country window denominators.
 * ``sources.parquet``                 domain -> publisher country, copied from clean.
 * ``meta.json``                       window, denominators, filters, run provenance.
@@ -47,6 +50,17 @@ from clustering_v2 import clean_token
 
 ONSET_OUTLETS = 3
 ONSET_QUANTILE = 0.1
+EVIDENCE_SUPPORTING = 3
+EVIDENCE_COMPETING = 1
+EVIDENCE_COLUMNS = [
+    "title_score",
+    "event_score",
+    "url_score",
+    "entity_score",
+    "delta_hours",
+    "evidence_channels",
+    "gated",
+]
 TYPE_MIN_SHARE = 0.3
 CAMEO_MIN_SHARE = 0.5
 TOP_ENTITIES = 3
@@ -360,6 +374,63 @@ def country_tables(
     return hourly, summary
 
 
+def document_evidence(pair_features: Path, membership: pl.DataFrame) -> pl.DataFrame:
+    """Top ``EVIDENCE_SUPPORTING`` in-incident edges and top ``EVIDENCE_COMPETING``
+    out-of-incident edges per document, ranked by gated pair score. Only edges that
+    survived the evidence gate (``gated > 0``) are considered; documents whose
+    incident is not a macro-event still get rows so unassigned articles can be
+    explained too."""
+    incident_of = (
+        membership.filter(pl.col("is_primary")).select("document_id", "incident_id").lazy()
+    )
+    pairs = (
+        pl.scan_parquet(pair_features)
+        .filter(pl.col("gated") > 0)
+        .select("left", "right", *EVIDENCE_COLUMNS)
+    )
+    directed = pl.concat(
+        [
+            pairs.rename({"left": "document_id", "right": "neighbor_document_id"}),
+            pairs.rename({"right": "document_id", "left": "neighbor_document_id"}),
+        ]
+    )
+    ranked = (
+        directed.join(incident_of, on="document_id")
+        .join(
+            incident_of.rename(
+                {"document_id": "neighbor_document_id", "incident_id": "neighbor_incident_id"}
+            ),
+            on="neighbor_document_id",
+        )
+        .with_columns(
+            (
+                (pl.col("incident_id") == pl.col("neighbor_incident_id"))
+                & (pl.col("incident_id") >= 0)
+            ).alias("same_incident")
+        )
+        .with_columns(
+            pl.col("gated")
+            .rank(method="ordinal", descending=True)
+            .over("document_id", "same_incident")
+            .alias("rank")
+        )
+        .filter(
+            (pl.col("same_incident") & (pl.col("rank") <= EVIDENCE_SUPPORTING))
+            | (~pl.col("same_incident") & (pl.col("rank") <= EVIDENCE_COMPETING))
+        )
+        .select(
+            "document_id",
+            "neighbor_document_id",
+            "neighbor_incident_id",
+            "same_incident",
+            "rank",
+            *EVIDENCE_COLUMNS,
+        )
+        .sort("document_id", "same_incident", "rank", descending=[False, True, False])
+    )
+    return ranked.collect(engine="streaming")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--clean", type=Path, required=True)
@@ -622,6 +693,11 @@ def main() -> None:
     family_summary.write_parquet(args.output / "country_family_summary.parquet")
     sources.write_parquet(args.output / "sources.parquet")
     baseline.write_parquet(args.output / "country_baseline.parquet")
+    pair_features = args.clusters / "pair_features.parquet"
+    if pair_features.exists():
+        document_evidence(pair_features, membership).write_parquet(
+            args.output / "document_evidence.parquet"
+        )
     in_events = macro_event_documents.filter(pl.col("macro_event_id") >= 0)
     meta = {
         "window_start": str(documents["first_seen"].min()),

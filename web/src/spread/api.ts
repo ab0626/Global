@@ -131,6 +131,55 @@ export function countries() {
   return get<{ publisher_countries: CountryBaseline[]; meta: Meta }>("/countries", {});
 }
 
+export type EvidenceNeighbor = {
+  document_id: number;
+  incident_id: number;
+  macro_event_id: number | null;
+  title: string | null;
+  language: string | null;
+  source_domain: string | null;
+  publisher_country: string | null;
+  observed_time: string | null;
+};
+
+/** One gated graph edge between the explained document and a neighbour. */
+export type EvidenceEdge = {
+  neighbor: EvidenceNeighbor;
+  same_incident: boolean;
+  rank: number;
+  title_score: number;
+  event_score: number;
+  url_score: number;
+  entity_score: number;
+  delta_hours: number;
+  evidence_channels: number;
+  gated: number;
+  same_publisher_country: boolean;
+};
+
+export type Evidence = {
+  document: SpreadDocument & { family_id: number; assignment_score: number };
+  incident: MacroEvent | null;
+  family: Family | null;
+  assignment_score: number;
+  checks: {
+    title_similarity: number | null;
+    shared_gdelt_event: boolean;
+    shared_url_tokens: boolean;
+    shared_entities: boolean;
+    hours_to_nearest_support: number | null;
+    other_publisher_country: boolean;
+  };
+  supporting: EvidenceEdge[];
+  competing: EvidenceEdge[];
+  note: string;
+  meta: Meta;
+};
+
+export function documentEvidence(id: number) {
+  return get<Evidence>(`/documents/${id}/evidence`, {});
+}
+
 export type CountriesResponse = {
   publisher_countries: CountryAttention[];
   world_onset: string | null;

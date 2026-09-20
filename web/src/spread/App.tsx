@@ -16,12 +16,15 @@ import {
   type Spread,
   type SpreadDocument,
 } from "./api";
+import { EvidencePanel } from "./Evidence";
 import "./spread.css";
 
 const EXAMPLES = ["Turkey Syria earthquake", "Chinese balloon", "Grammy", "Erdbeben", "地震"];
 const MIN_CONFIDENCE = 0.5;
 /** Animation compresses the observed window into this many seconds. */
 const PLAY_SECONDS = 40;
+/** Articles listed in the side panel (earliest observed first). */
+const ARTICLE_ROWS = 12;
 /** A story family (what a user means by "the event") or one of its incidents
  * (a single Leiden cluster). */
 type Selection =
@@ -65,6 +68,7 @@ export default function App() {
   const [hover, setHover] = useState<Hover | null>(null);
   const [background, setBackground] = useState<GlobeConfig["background"]>("white");
   const [arcs, setArcs] = useState(true);
+  const [evidenceDoc, setEvidenceDoc] = useState<number | null>(null);
   const globeConfig = useMemo<Partial<GlobeConfig>>(() => ({ background, arcs }), [background, arcs]);
   const abort = useRef<AbortController | null>(null);
   const side = useRef<HTMLElement | null>(null);
@@ -88,6 +92,7 @@ export default function App() {
     setPlaying(false);
     setPlayhead(0);
     setLoaded(null);
+    setEvidenceDoc(null);
     side.current?.scrollTo({ top: 0 });
     try {
       const r = await search(text);
@@ -114,6 +119,7 @@ export default function App() {
     setPlaying(false);
     setPlayhead(0);
     setLoaded(null);
+    setEvidenceDoc(null);
     const familyId = selection.family.family_id;
     const target =
       selection.kind === "family"
@@ -403,6 +409,35 @@ export default function App() {
                 outlets. Ratio = country's share of its own output vs world share, computed over the{" "}
                 {loaded.selection.kind === "family" ? "whole story" : "incident"}.
               </p>
+
+              <h3>Earliest articles</h3>
+              <ol className="articles">
+                {loaded.spread.documents.slice(0, ARTICLE_ROWS).map((d) => (
+                  <li key={d.document_id} className={d.document_id === evidenceDoc ? "active" : ""}>
+                    <button
+                      className="result article"
+                      onClick={() => setEvidenceDoc(d.document_id === evidenceDoc ? null : d.document_id)}
+                      title="why is this article in this event?"
+                    >
+                      <span className="result-title">{d.title ?? d.url}</span>
+                      <span className="result-meta">
+                        {utc(d.observed_time)} · {d.source_domain} ·{" "}
+                        {d.publisher_country ? name(d.publisher_country, baseline) : "unresolved"}
+                        {d.language ? ` · ${d.language}` : ""}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              <p className="muted small">Click an article to see why it was assigned to this event.</p>
+              {evidenceDoc != null && (
+                <EvidencePanel
+                  documentId={evidenceDoc}
+                  countryName={(code) => (code ? name(code, baseline) : "unresolved")}
+                  utc={utc}
+                  onClose={() => setEvidenceDoc(null)}
+                />
+              )}
             </section>
           )}
         </aside>

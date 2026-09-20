@@ -1,11 +1,12 @@
 """Event-centric attention endpoints over the tables written by ``attention.materialize``.
 
-Mounted under ``/search``, ``/events``, ``/families``, ``/event-types`` and
-``/countries``. The store directory comes from ``GDELT_ATTENTION_DATA`` (default
-``data/store``); every response carries ``meta`` (window, denominators, timing
-semantics, resolution model, filters) so charts can label themselves. Country
-fields are always ``publisher_country`` (where the outlet is based) or
-``event_country`` (where GDELT geolocated the event); there is no bare ``country``.
+Mounted under ``/search``, ``/events``, ``/families``, ``/documents``,
+``/event-types`` and ``/countries``. The store directory comes from
+``GDELT_ATTENTION_DATA`` (default ``data/store``); every response carries ``meta``
+(window, denominators, timing semantics, resolution model, filters) so charts can
+label themselves. Country fields are always ``publisher_country`` (where the outlet
+is based) or ``event_country`` (where GDELT geolocated the event); there is no bare
+``country``.
 """
 
 from __future__ import annotations
@@ -115,6 +116,8 @@ class AttentionStore:
         self.family_summary = pl.read_parquet(directory / "country_family_summary.parquet")
         self.sources = pl.read_parquet(directory / "sources.parquet")
         self.baseline = pl.read_parquet(directory / "country_baseline.parquet")
+        evidence_path = directory / "document_evidence.parquet"
+        self.evidence = pl.read_parquet(evidence_path) if evidence_path.exists() else None
         meta = json.loads((directory / "meta.json").read_text(encoding="utf-8"))
         self.meta = {key: value for key, value in meta.items() if key != "cluster_run"}
         self.title_search = self.documents.filter(
@@ -529,6 +532,95 @@ def type_countries(
     )
     return data.envelope(
         {"type": event_type, "macro_events": ids.height, "publisher_countries": records(frame)}
+    )
+
+
+EVIDENCE_NEIGHBOR_COLUMNS = [
+    "document_id",
+    "incident_id",
+    "macro_event_id",
+    "title",
+    "language",
+    "source_domain",
+    "publisher_country",
+    "observed_time",
+]
+
+
+@router.get("/documents/{document_id}/evidence")
+def document_evidence(document_id: int) -> dict:
+    """Why this article sits in its incident: the strongest gated graph edges to
+    other documents of the same incident (``supporting``) and the strongest edge to
+    any other incident (``competing``), each with per-channel scores. Documents with
+    no surviving edge are singletons/unassigned and return empty lists."""
+    data = store()
+    doc = data.documents.filter((pl.col("document_id") == document_id) & pl.col("is_primary"))
+    if doc.is_empty():
+        raise HTTPException(404, f"document {document_id} not found")
+    if data.evidence is None:
+        raise HTTPException(503, "store was built without document_evidence.parquet")
+    row = records(doc.select(*SPREAD_COLUMNS, "family_id"))[0]
+    edges = data.evidence.filter(pl.col("document_id") == document_id).join(
+        data.documents.filter(pl.col("is_primary")).select(EVIDENCE_NEIGHBOR_COLUMNS),
+        left_on="neighbor_document_id",
+        right_on="document_id",
+        how="left",
+    )
+    edge_records: list[dict] = []
+    for edge in edges.sort("same_incident", "rank", descending=[True, False]).iter_rows(named=True):
+        neighbor = {
+            "document_id": edge["neighbor_document_id"],
+            "incident_id": edge["neighbor_incident_id"],
+            "macro_event_id": edge["macro_event_id"],
+            "title": edge["title"],
+            "language": edge["language"],
+            "source_domain": edge["source_domain"],
+            "publisher_country": edge["publisher_country"],
+            "observed_time": edge["observed_time"],
+        }
+        edge_records.append(
+            {
+                "neighbor": neighbor,
+                "same_incident": edge["same_incident"],
+                "rank": edge["rank"],
+                "title_score": edge["title_score"],
+                "event_score": edge["event_score"],
+                "url_score": edge["url_score"],
+                "entity_score": edge["entity_score"],
+                "delta_hours": edge["delta_hours"],
+                "evidence_channels": edge["evidence_channels"],
+                "gated": edge["gated"],
+                "same_publisher_country": edge["publisher_country"] == row["publisher_country"],
+            }
+        )
+    supporting = [e for e in edge_records if e["same_incident"]]
+    competing = [e for e in edge_records if not e["same_incident"]]
+    incident = data.macro_events.filter(pl.col("macro_event_id") == row["macro_event_id"])
+    family = data.families.filter(pl.col("family_id") == row["family_id"])
+    support = edges.filter(pl.col("same_incident"))
+    checks = {
+        "title_similarity": support["title_score"].max(),
+        "shared_gdelt_event": bool((support["event_score"] > 0).any()),
+        "shared_url_tokens": bool((support["url_score"] > 0).any()),
+        "shared_entities": bool((support["entity_score"] > 0).any()),
+        "hours_to_nearest_support": support["delta_hours"].min(),
+        "other_publisher_country": bool(
+            (support["publisher_country"] != row["publisher_country"]).any()
+        ),
+    }
+    return data.envelope(
+        {
+            "document": row,
+            "incident": records(incident.drop("search_text"))[0] if incident.height else None,
+            "family": records(family.drop("macro_event_ids"))[0] if family.height else None,
+            "assignment_score": row["assignment_score"],
+            "checks": checks,
+            "supporting": supporting,
+            "competing": competing,
+            "note": "scores are the clustering run's pair channels (title = calibrated "
+            "multilingual cosine, event = IDF-weighted GlobalEventID overlap, url/entity = "
+            "rare-token overlap); gated is the fused edge weight Leiden saw",
+        }
     )
 
 

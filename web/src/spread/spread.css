@@ -516,3 +516,164 @@ body,
     max-height: 40vh;
   }
 }
+
+/* earliest-articles list + "why is this article here" evidence panel */
+.articles {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.articles li {
+  border-left: 3px solid transparent;
+}
+
+.articles li.active {
+  border-left-color: var(--blue);
+}
+
+.result.article .result-title {
+  font-weight: 400;
+  font-size: 13px;
+}
+
+.evidence {
+  margin-top: 14px;
+  padding: 12px 12px 6px;
+  border: 1px solid var(--grey-light);
+  border-left: 3px solid var(--blue);
+  background: var(--grey-bg);
+}
+
+.evidence-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.evidence-head h3 {
+  margin: 0;
+}
+
+.evidence-head .link {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--grey);
+  cursor: pointer;
+}
+
+.evidence h4 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--grey);
+  margin: 12px 0 4px;
+}
+
+.evidence-doc {
+  margin: 8px 0;
+}
+
+.evidence-doc a {
+  display: block;
+  color: inherit;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.evidence-doc a:hover {
+  text-decoration: underline;
+}
+
+.evidence-doc span {
+  display: block;
+  margin-top: 2px;
+}
+
+.evidence-stats dd {
+  font-size: 18px;
+}
+
+.checks {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.checks li {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.checks .mark {
+  width: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.checks li.ok .mark {
+  color: var(--blue);
+}
+
+.checks li.no {
+  color: var(--grey);
+}
+
+.checks li.no .mark {
+  color: var(--red);
+}
+
+.checks li.neutral .mark {
+  color: var(--grey);
+}
+
+.edges {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+}
+
+.edges li {
+  padding: 6px 0;
+  border-top: 1px solid var(--grey-light);
+}
+
+.edges li span {
+  display: block;
+}
+
+.edges .edge-title {
+  font-weight: 500;
+}
+
+.edges .edge-scores {
+  font-variant-numeric: tabular-nums;
+  color: var(--grey);
+}
+
+.edges.competing .edge-scores b {
+  color: var(--red);
+}
+
+.chip.warn {
+  margin-left: 8px;
+  border-color: var(--red);
+  color: var(--red);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.spread-app.dark .evidence {
+  background: #15171c;
+  border-color: #2a2d34;
+  border-left-color: var(--blue);
+}
+
+.spread-app.dark .edges li {
+  border-top-color: #2a2d34;
+}
