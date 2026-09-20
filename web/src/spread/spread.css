@@ -241,7 +241,7 @@ body,
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   margin: 10px 0;
 }
@@ -308,29 +308,156 @@ body,
   justify-content: center;
 }
 
-.globe {
+.globe-wrap .ripple-globe {
+  position: absolute;
+  inset: 0;
   cursor: grab;
   touch-action: none;
 }
 
-.globe:active {
+.globe-wrap .ripple-globe:active {
   cursor: grabbing;
 }
 
-.tooltip {
+/* soft halo/shadow so the planet does not float on pure white */
+.globe-wrap::before {
+  content: "";
   position: absolute;
   left: 50%;
-  bottom: 8px;
-  transform: translateX(-50%);
-  max-width: 80%;
-  background: var(--black);
-  color: #fff;
-  padding: 6px 10px;
-  font-size: 12px;
+  top: 50%;
+  width: min(58vh, 56%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(110, 158, 232, 0.16) 0%, rgba(110, 158, 232, 0.05) 55%, transparent 72%);
   pointer-events: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.spread-app.dark .globe-wrap {
+  background: radial-gradient(ellipse at center, #141a26 0%, #07090f 75%);
+}
+
+.spread-app.dark .globe-wrap::before {
+  background: radial-gradient(circle, rgba(110, 158, 232, 0.12) 0%, transparent 70%);
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 10;
+  min-width: 200px;
+  max-width: 320px;
+  background: rgba(17, 17, 17, 0.94);
+  color: #fff;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+  border-radius: 3px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+.tooltip strong {
+  display: block;
+  font-size: 13px;
+}
+
+.tooltip-kind {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff7a7a;
+  margin-bottom: 4px;
+}
+
+.tooltip-kind.origin {
+  color: #8fb0ff;
+}
+
+.tooltip dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 12px;
+  margin: 0;
+}
+
+.tooltip dt {
+  color: #b5b5b5;
+}
+
+.tooltip dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stage-options {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  font-size: 12px;
+}
+
+.stage-options .link {
+  font: inherit;
+  color: var(--grey);
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 14px;
+}
+
+.spread-app.dark .stage-options .link,
+.spread-app.dark .legend,
+.spread-app.dark .stage-hint {
+  color: #c9d1de;
+}
+
+.legend {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--grey);
+  pointer-events: none;
+}
+
+.swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.swatch.origin {
+  background: var(--blue);
+}
+
+.swatch.active {
+  background: var(--red);
+}
+
+.types {
+  margin: 0 0 10px;
+}
+
+.chip {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  margin: 0 6px 4px 0;
+  border: 1px solid var(--grey-light);
+  border-radius: 10px;
+  color: var(--grey);
+}
+
+.stats dd.time {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .stage-hint {

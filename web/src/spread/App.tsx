@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Globe, type Marker } from "./Globe";
+import { RippleGlobe } from "./globe/RippleGlobe";
+import type { GlobeConfig } from "./globe/config";
+import type { CountryMarker, Hover, Origin } from "./globe/types";
 import {
   countries,
   eventCountries,
@@ -60,7 +62,10 @@ export default function App() {
   const [playhead, setPlayhead] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [hover, setHover] = useState<Marker | null>(null);
+  const [hover, setHover] = useState<Hover | null>(null);
+  const [background, setBackground] = useState<GlobeConfig["background"]>("white");
+  const [arcs, setArcs] = useState(true);
+  const globeConfig = useMemo<Partial<GlobeConfig>>(() => ({ background, arcs }), [background, arcs]);
   const abort = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -157,15 +162,18 @@ export default function App() {
     return () => cancelAnimationFrame(frame);
   }, [playing, speed, timeline]);
 
-  const shown = timeline ? timeline.docs.filter((d) => d.t <= playhead) : [];
+  const shownCount = timeline ? countAtOrBefore(timeline.docTimes, playhead) : 0;
   const clock =
-    timeline && timeline.docs.length > 0
+    timeline && timeline.docTimes.length > 0
       ? new Date(timeline.start + (Math.min(playhead, timeline.duration) / timeline.duration) * timeline.span)
       : null;
-  const visibleCountries = new Set(shown.map((d) => d.doc.publisher_country));
+  const visibleCountries = useMemo(
+    () => new Set(timeline?.markers.filter((m) => m.t <= playhead).map((m) => m.code) ?? []),
+    [timeline, playhead],
+  );
 
   return (
-    <div className="spread-app">
+    <div className={`spread-app ${background}`}>
       <header className="spread-header">
         <h1>
           Show the spread of{" "}
@@ -306,14 +314,23 @@ export default function App() {
                   </p>
                 </>
               )}
+              {eventTypes(loaded).length > 0 && (
+                <p className="types">
+                  {eventTypes(loaded).map((t) => (
+                    <span key={t} className="chip">
+                      {t.replaceAll("_", " ")}
+                    </span>
+                  ))}
+                </p>
+              )}
               <dl className="stats">
                 <div>
                   <dt>articles</dt>
-                  <dd>{loaded.spread.total}</dd>
+                  <dd>{loaded.spread.total.toLocaleString()}</dd>
                 </div>
                 <div>
                   <dt>outlets</dt>
-                  <dd>{new Set(loaded.spread.documents.map((d) => d.source_domain)).size}</dd>
+                  <dd>{new Set(loaded.spread.documents.map((d) => d.source_domain)).size.toLocaleString()}</dd>
                 </div>
                 <div>
                   <dt>incidents</dt>
@@ -322,6 +339,14 @@ export default function App() {
                 <div>
                   <dt>publisher countries</dt>
                   <dd>{loaded.spread.countries.length}</dd>
+                </div>
+                <div>
+                  <dt>first observed</dt>
+                  <dd className="time">{timeline.docTimes.length ? utc(new Date(timeline.start).toISOString()) : "—"}</dd>
+                </div>
+                <div>
+                  <dt>global onset</dt>
+                  <dd className="time">{loaded.worldOnset ? utc(loaded.worldOnset) : "—"}</dd>
                 </div>
               </dl>
               {timeline.unplaced.length > 0 && (
@@ -378,16 +403,30 @@ export default function App() {
 
         <section className="spread-stage">
           <div className="globe-wrap">
-            <Globe
+            <RippleGlobe
               markers={timeline?.markers ?? []}
+              origin={timeline?.origin ?? null}
               now={playhead}
-              focus={timeline?.focus ?? null}
               onHover={setHover}
+              config={globeConfig}
             />
-            {hover && <div className="tooltip">{hover.label}</div>}
+            {hover && <Tooltip hover={hover} />}
             {!loaded && status.kind !== "loading" && (
               <div className="stage-hint">Type an event above to animate where its coverage appeared.</div>
             )}
+            <div className="stage-options">
+              <button className="link" onClick={() => setBackground((b) => (b === "white" ? "dark" : "white"))}>
+                {background === "white" ? "dark mode" : "light mode"}
+              </button>
+              <button className="link" onClick={() => setArcs((a) => !a)}>
+                {arcs ? "hide arcs" : "show arcs"}
+              </button>
+            </div>
+            <div className="legend">
+              <span><i className="swatch origin" /> event location</span>
+              <span><i className="swatch active" /> publisher country (outlet base)</span>
+              {arcs && <span className="muted">arcs show attention order, not transmission</span>}
+            </div>
           </div>
           {timeline && (
             <div className="controls">
@@ -396,7 +435,7 @@ export default function App() {
                   if (!playing && playhead >= timeline.duration) setPlayhead(0);
                   setPlaying((p) => !p);
                 }}
-                disabled={timeline.docs.length === 0}
+                disabled={timeline.docTimes.length === 0}
               >
                 {playing ? "Pause" : playhead >= timeline.duration ? "Replay" : "Play"}
               </button>
@@ -421,11 +460,12 @@ export default function App() {
               </select>
               <span className="clock">{clock ? utc(clock.toISOString()) : "—"}</span>
               <span className="muted">
-                {shown.length}/{timeline.docs.length} articles · {visibleCountries.size} countries
+                {shownCount.toLocaleString()}/{timeline.docTimes.length.toLocaleString()} articles ·{" "}
+                {visibleCountries.size}/{timeline.markers.length} countries
               </span>
             </div>
           )}
-          {loaded && timeline && timeline.docs.length === 0 && (
+          {loaded && timeline && timeline.docTimes.length === 0 && (
             <div className="notice">
               No articles with a resolved publisher country to animate.
             </div>
@@ -456,18 +496,77 @@ function name(code: string, baseline: Map<string, CountryBaseline>) {
   return baseline.get(code)?.country_name ?? code;
 }
 
+function eventTypes(loaded: Loaded): string[] {
+  const events = loaded.selection.kind === "incident" ? [loaded.selection.event] : loaded.incidents;
+  const counts = new Map<string, number>();
+  for (const ev of events) for (const t of ev.event_types) counts.set(t, (counts.get(t) ?? 0) + 1);
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([t]) => t);
+}
+
+/** Number of ascending `times` that are <= `value`. */
+function countAtOrBefore(times: number[], value: number): number {
+  let lo = 0;
+  let hi = times.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (times[mid] <= value) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+function Tooltip({ hover }: { hover: Hover }) {
+  const style = { left: hover.x + 14, top: hover.y + 14 };
+  if (hover.kind === "origin") {
+    const o = hover.origin;
+    return (
+      <div className="tooltip" style={style}>
+        <strong>{o.title}</strong>
+        <span className="tooltip-kind origin">event location</span>
+        <div>{o.location}</div>
+        <div>global onset {o.globalOnset ? utc(o.globalOnset) : "—"}</div>
+      </div>
+    );
+  }
+  const m = hover.marker;
+  return (
+    <div className="tooltip" style={style}>
+      <strong>{m.name}</strong>
+      <span className="tooltip-kind">publisher country</span>
+      <dl>
+        <dt>first seen</dt>
+        <dd>{utc(m.firstSeen)}</dd>
+        <dt>onset</dt>
+        <dd>{m.onset ? utc(m.onset) : "— (fewer than 3 outlets)"}</dd>
+        <dt>lag vs world</dt>
+        <dd>{m.lagHours == null ? "—" : `${m.lagHours >= 0 ? "+" : ""}${m.lagHours.toFixed(1)} h`}</dd>
+        <dt>articles</dt>
+        <dd>{m.articles.toLocaleString()}</dd>
+        <dt>effective reports</dt>
+        <dd>{m.effectiveReports.toLocaleString()}</dd>
+        <dt>attention ratio</dt>
+        <dd>{m.attentionRatio == null ? "—" : m.attentionRatio.toFixed(2)}</dd>
+      </dl>
+    </div>
+  );
+}
+
 type Timeline = {
-  docs: { doc: SpreadDocument; t: number }[];
-  markers: Marker[];
+  /** playhead second of every drawn article, ascending */
+  docTimes: number[];
+  markers: CountryMarker[];
+  origin: Origin | null;
   unplaced: string[];
   duration: number;
   start: number;
   span: number;
-  focus: [number, number] | null;
 };
 
-/** Map observed_time onto [0, PLAY_SECONDS]; one red dot per article, jittered around
- * its publisher-country centroid. */
+/** Map observed_time onto [0, PLAY_SECONDS] and fold articles into one marker per
+ * publisher country (activation = first article, growth = cumulative articles). */
 function buildTimeline(loaded: Loaded | null, baseline: Map<string, CountryBaseline>): Timeline | null {
   if (!loaded) return null;
   const docs = [...loaded.spread.documents].sort((a, b) =>
@@ -477,57 +576,87 @@ function buildTimeline(loaded: Loaded | null, baseline: Map<string, CountryBasel
         ? -1
         : 1,
   );
-  if (docs.length === 0) {
-    return { docs: [], markers: [], unplaced: [], duration: 0, start: 0, span: 1, focus: null };
-  }
+  const empty: Timeline = {
+    docTimes: [],
+    markers: [],
+    origin: null,
+    unplaced: [],
+    duration: 0,
+    start: 0,
+    span: 1,
+  };
+  if (docs.length === 0) return { ...empty, origin: originOf(loaded, baseline) };
   const start = Date.parse(docs[0].observed_time);
   const end = Date.parse(docs[docs.length - 1].observed_time);
   const span = Math.max(end - start, 15 * 60 * 1000);
   const duration = PLAY_SECONDS;
-  const timed = docs.map((doc) => ({
-    doc,
-    t: ((Date.parse(doc.observed_time) - start) / span) * duration,
-  }));
-  const markers: Marker[] = [];
+  const at = (doc: SpreadDocument) => ((Date.parse(doc.observed_time) - start) / span) * duration;
+  const perCountry = new Map<string, number[]>();
   const unplaced = new Set<string>();
-  const perCountry = new Map<string, number>();
-  for (const { doc, t } of timed) {
+  const docTimes: number[] = [];
+  for (const doc of docs) {
     const code = doc.publisher_country ?? "?";
     const row = baseline.get(code);
     if (!row || row.lat == null || row.lon == null) {
       unplaced.add(code);
       continue;
     }
-    const n = perCountry.get(code) ?? 0;
-    perCountry.set(code, n + 1);
-    // deterministic sunflower jitter so stacked articles in one country stay legible
-    const angle = n * 2.399963;
-    const radius = Math.min(4, 0.9 * Math.sqrt(n));
+    const t = at(doc);
+    docTimes.push(t);
+    const times = perCountry.get(code);
+    if (times) times.push(t);
+    else perCountry.set(code, [t]);
+  }
+  const attention = new Map(loaded.attention.map((a) => [a.publisher_country, a]));
+  const markers: CountryMarker[] = [];
+  for (const c of loaded.spread.countries) {
+    const times = perCountry.get(c.publisher_country);
+    const row = baseline.get(c.publisher_country);
+    if (!times || !row || row.lat == null || row.lon == null) continue;
+    const a = attention.get(c.publisher_country);
     markers.push({
-      key: String(doc.document_id),
-      lat: row.lat + radius * Math.sin(angle),
-      lon: row.lon + radius * Math.cos(angle),
-      t,
-      size: 3.2,
-      label: `${doc.source_domain} · ${utc(doc.observed_time)}${doc.title ? ` — ${doc.title}` : ""}`,
-      kind: "publisher",
+      code: c.publisher_country,
+      name: row.country_name ?? c.publisher_country,
+      lat: row.lat,
+      lon: row.lon,
+      t: times[0],
+      articleTimes: times,
+      firstSeen: c.first_seen,
+      onset: a?.onset ?? null,
+      lagHours: a?.lag_hours ?? null,
+      articles: c.raw_documents,
+      effectiveReports: c.effective_reports,
+      attentionRatio: a?.attention_ratio ?? null,
     });
   }
+  markers.sort((a, b) => a.t - b.t);
+  return {
+    docTimes,
+    markers,
+    origin: originOf(loaded, baseline),
+    unplaced: [...unplaced],
+    duration,
+    start,
+    span,
+  };
+}
+
+/** Event location = GDELT geography of the selected incident (or the family's
+ * largest incident) — distinct from where the covering outlets are based. */
+function originOf(loaded: Loaded, baseline: Map<string, CountryBaseline>): Origin | null {
   const ev = loaded.selection.kind === "incident" ? loaded.selection.event : loaded.incidents[0];
-  let focus: [number, number] | null = null;
-  if (ev && ev.lat != null && ev.lon != null) {
-    focus = [ev.lat, ev.lon];
-    markers.unshift({
-      key: "event",
-      lat: ev.lat,
-      lon: ev.lon,
-      t: 0,
-      size: 6,
-      label: `event location (GDELT geo of the incident)`,
-      kind: "event",
-    });
-  } else if (markers.length > 0) {
-    focus = [markers[0].lat, markers[0].lon];
-  }
-  return { docs: timed, markers, unplaced: [...unplaced], duration, start, span, focus };
+  if (!ev || ev.lat == null || ev.lon == null) return null;
+  const title =
+    loaded.selection.kind === "family"
+      ? (loaded.selection.family.title ?? loaded.selection.family.label ?? "story")
+      : (ev.title ?? ev.label ?? "incident");
+  return {
+    lat: ev.lat,
+    lon: ev.lon,
+    title,
+    location: ev.event_country
+      ? `${name(ev.event_country, baseline)} · ${ev.lat.toFixed(2)}, ${ev.lon.toFixed(2)}`
+      : `${ev.lat.toFixed(2)}, ${ev.lon.toFixed(2)}`,
+    globalOnset: loaded.worldOnset,
+  };
 }
