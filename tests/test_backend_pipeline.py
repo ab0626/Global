@@ -783,5 +783,51 @@ def test_type_and_country_rollups(client: TestClient) -> None:
 
 def test_openapi_lists_new_routes(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
-    for route in ("/search", "/events/{event_id}/spread", "/families/{family_id}"):
+    for route in (
+        "/search",
+        "/events/{event_id}/spread",
+        "/families/{family_id}",
+        "/families/{family_id}/spread",
+        "/families/{family_id}/countries",
+        "/families/{family_id}/timeline",
+    ):
         assert f"/api/v2/attention{route}" in paths
+
+
+def test_search_returns_families_first_with_story_level_attention(client: TestClient) -> None:
+    body = client.get("/api/v2/attention/search", params={"q": "earthquake"}).json()
+    assert body["total_families"] >= 1
+    family = body["families"][0]
+    assert family["title_hits"] >= body["events"][0]["title_hits"]
+    assert family["publisher_country_count"] >= body["events"][0]["publisher_country_count"]
+    assert "macro_event_ids" not in family
+    family_id = family["family_id"]
+
+    min_conf = body["meta"]["filters"]["min_country_confidence"]
+    spread = client.get(
+        f"/api/v2/attention/families/{family_id}/spread",
+        params={"min_country_confidence": min_conf, "limit": 5000},
+    ).json()
+    members = client.get(f"/api/v2/attention/families/{family_id}").json()["events"]
+    assert spread["family_id"] == family_id
+    assert (
+        spread["total"] >= max(e["raw_documents"] for e in members) - spread["excluded_documents"]
+    )
+    assert {d["macro_event_id"] for d in spread["documents"]} <= {
+        e["macro_event_id"] for e in members
+    }
+    times = [d["observed_time"] for d in spread["documents"]]
+    assert times == sorted(times)
+
+    countries = client.get(f"/api/v2/attention/families/{family_id}/countries").json()
+    rows = countries["publisher_countries"]
+    assert rows and all("publisher_country" in r and "country" not in r for r in rows)
+    assert sum(r["raw_documents"] for r in rows) == spread["total"]
+    assert any(r["lag_hours"] is not None for r in rows)
+    assert all(r["lag_hours"] is None for r in rows if r["suppressed"])
+
+    timeline = client.get(f"/api/v2/attention/families/{family_id}/timeline").json()
+    assert timeline["family_id"] == family_id
+    assert sum(b["raw_documents"] for b in timeline["world"]) == spread["total"]
+
+    assert client.get("/api/v2/attention/families/999999/spread").status_code == 404

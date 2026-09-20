@@ -282,10 +282,15 @@ def country_names(lookup_path: Path | None) -> pl.DataFrame:
 
 
 def country_tables(
-    docs: pl.DataFrame, baseline: pl.DataFrame, world_docs: int, world_reports: int
+    docs: pl.DataFrame,
+    baseline: pl.DataFrame,
+    world_docs: int,
+    world_reports: int,
+    key: str = "macro_event_id",
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """Hourly attention and per-country summary for assigned, country-resolved docs."""
-    keys = ["macro_event_id", "publisher_country"]
+    """Hourly attention and per-country summary for assigned, country-resolved docs,
+    grouped by ``key`` (an incident ``macro_event_id`` or a story ``family_id``)."""
+    keys = [key, "publisher_country"]
     hourly = (
         docs.with_columns(pl.col("observed_time").dt.truncate("1h").alias("time_bucket"))
         .group_by(*keys, "time_bucket")
@@ -319,10 +324,8 @@ def country_tables(
             "country_name",
         )
     )
-    world_onset = onset(docs, ["macro_event_id"]).select(
-        "macro_event_id", pl.col("onset").alias("world_onset")
-    )
-    event_totals = docs.group_by("macro_event_id").agg(
+    world_onset = onset(docs, [key]).select(key, pl.col("onset").alias("world_onset"))
+    event_totals = docs.group_by(key).agg(
         pl.len().alias("event_documents"),
         pl.col("wire_group").n_unique().alias("event_effective_reports"),
     )
@@ -336,9 +339,9 @@ def country_tables(
             pl.col("observed_time").max().alias("last_seen"),
         )
         .join(baseline, on="publisher_country")
-        .join(event_totals, on="macro_event_id")
+        .join(event_totals, on=key)
         .join(outlets, on=keys, how="left")
-        .join(world_onset, on="macro_event_id", how="left")
+        .join(world_onset, on=key, how="left")
         .with_columns(
             (pl.col("raw_documents") / pl.col("country_documents")).alias("raw_share"),
             (pl.col("effective_reports") / pl.col("country_effective_reports")).alias(
@@ -352,7 +355,7 @@ def country_tables(
             ((pl.col("onset") - pl.col("world_onset")).dt.total_minutes() / 60).alias("lag_hours"),
             (pl.col("unique_domains") < ONSET_OUTLETS).alias("suppressed"),
         )
-        .sort("macro_event_id", "raw_documents", descending=[False, True])
+        .sort(key, "raw_documents", descending=[False, True])
     )
     return hourly, summary
 
@@ -596,12 +599,27 @@ def main() -> None:
         & (pl.col("publisher_country_confidence") >= args.min_country_confidence)
     )
     hourly, summary = country_tables(attention_docs, baseline, world_documents, world_reports)
+    family_hourly, family_summary = country_tables(
+        attention_docs, baseline, world_documents, world_reports, key="family_id"
+    )
+    families = families.join(
+        attention_docs.group_by("family_id").agg(
+            pl.col("publisher_country").n_unique().alias("publisher_country_count"),
+            pl.col("language").drop_nulls().n_unique().alias("language_count"),
+        ),
+        on="family_id",
+        how="left",
+    ).with_columns(
+        pl.col("publisher_country_count").fill_null(0), pl.col("language_count").fill_null(0)
+    )
 
     macro_events.write_parquet(args.output / "macro_events.parquet")
     families.write_parquet(args.output / "event_families.parquet")
     macro_event_documents.write_parquet(args.output / "macro_event_documents.parquet")
     hourly.write_parquet(args.output / "country_event_attention.parquet")
     summary.write_parquet(args.output / "country_event_summary.parquet")
+    family_hourly.write_parquet(args.output / "country_family_attention.parquet")
+    family_summary.write_parquet(args.output / "country_family_summary.parquet")
     sources.write_parquet(args.output / "sources.parquet")
     baseline.write_parquet(args.output / "country_baseline.parquet")
     in_events = macro_event_documents.filter(pl.col("macro_event_id") >= 0)

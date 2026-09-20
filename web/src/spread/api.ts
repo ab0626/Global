@@ -29,6 +29,20 @@ export type MacroEvent = {
   title_hits?: number;
 };
 
+export type Family = {
+  family_id: number;
+  title: string | null;
+  label: string | null;
+  incident_count: number;
+  raw_documents: number;
+  effective_reports: number;
+  publisher_country_count: number;
+  language_count: number;
+  start_time: string;
+  end_time: string;
+  title_hits?: number;
+};
+
 export type SpreadDocument = {
   document_id: number;
   macro_event_id: number;
@@ -50,9 +64,9 @@ export type SpreadCountry = {
 };
 
 export type Spread = {
-  macro_event_id: number;
+  macro_event_id?: number;
   family_id: number;
-  include_family: boolean;
+  include_family?: boolean;
   total: number;
   excluded_documents: number;
   offset: number;
@@ -100,37 +114,54 @@ async function get<T>(path: string, params: Record<string, string | number | boo
 }
 
 export function search(q: string, limit = 12) {
-  return get<{ total: number; events: MacroEvent[]; meta: Meta }>("/search", { q, limit });
+  return get<{
+    total: number;
+    total_families: number;
+    families: Family[];
+    events: MacroEvent[];
+    meta: Meta;
+  }>("/search", { q, limit });
+}
+
+export function familyDetail(id: number) {
+  return get<{ family: Family; events: MacroEvent[]; meta: Meta }>(`/families/${id}`, {});
 }
 
 export function countries() {
   return get<{ publisher_countries: CountryBaseline[]; meta: Meta }>("/countries", {});
 }
 
+export type CountriesResponse = {
+  publisher_countries: CountryAttention[];
+  world_onset: string | null;
+  meta: Meta;
+};
+
 export function eventCountries(id: number) {
-  return get<{ publisher_countries: CountryAttention[]; world_onset: string | null; meta: Meta }>(
-    `/events/${id}/countries`,
-    {},
-  );
+  return get<CountriesResponse>(`/events/${id}/countries`, {});
+}
+
+export function familyCountries(id: number) {
+  return get<CountriesResponse>(`/families/${id}/countries`, {});
 }
 
 const PAGE = 2000;
 
-/** Every document of an event in (observed_time, document_id) order, following the
+/** Every document of an incident (`/events/{id}/spread`) or a story family
+ * (`/families/{id}/spread`) in (observed_time, document_id) order, following the
  * stable pagination until `total` is reached. */
 export async function fullSpread(
-  id: number,
-  includeFamily: boolean,
+  target: { kind: "family" | "incident"; id: number },
   minConfidence: number,
   signal?: AbortSignal,
 ): Promise<Spread> {
+  const path = `/${target.kind === "family" ? "families" : "events"}/${target.id}/spread`;
   let offset = 0;
   let first: Spread | null = null;
   const documents: SpreadDocument[] = [];
   for (;;) {
     if (signal?.aborted) throw new DOMException("aborted", "AbortError");
-    const page = await get<Spread>(`/events/${id}/spread`, {
-      include_family: includeFamily,
+    const page = await get<Spread>(path, {
       min_country_confidence: minConfidence,
       limit: PAGE,
       offset,

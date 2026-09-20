@@ -3,10 +3,13 @@ import { Globe, type Marker } from "./Globe";
 import {
   countries,
   eventCountries,
+  familyCountries,
+  familyDetail,
   fullSpread,
   search,
   type CountryAttention,
   type CountryBaseline,
+  type Family,
   type MacroEvent,
   type Spread,
   type SpreadDocument,
@@ -17,8 +20,11 @@ const EXAMPLES = ["Turkey Syria earthquake", "Chinese balloon", "Grammy", "Erdbe
 const MIN_CONFIDENCE = 0.5;
 /** Animation compresses the observed window into this many seconds. */
 const PLAY_SECONDS = 40;
-/** "story" = the incident plus its linked story family; "incident" = one Leiden cluster. */
-type Scope = "story" | "incident";
+/** A story family (what a user means by "the event") or one of its incidents
+ * (a single Leiden cluster). */
+type Selection =
+  | { kind: "family"; family: Family }
+  | { kind: "incident"; event: MacroEvent; family: Family };
 
 type Status =
   | { kind: "idle" }
@@ -27,7 +33,9 @@ type Status =
   | { kind: "ready" };
 
 type Loaded = {
-  event: MacroEvent;
+  selection: Selection;
+  /** incidents of the family, largest first; the first one supplies the event location */
+  incidents: MacroEvent[];
   spread: Spread;
   attention: CountryAttention[];
   worldOnset: string | null;
@@ -44,14 +52,14 @@ const utc = (iso: string) => `${fmt.format(new Date(iso))} UTC`;
 
 export default function App() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<MacroEvent[] | null>(null);
+  const [results, setResults] = useState<Family[] | null>(null);
+  const [expanded, setExpanded] = useState<Map<number, MacroEvent[]>>(new Map());
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [baseline, setBaseline] = useState<Map<string, CountryBaseline>>(new Map());
   const [playhead, setPlayhead] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [scope, setScope] = useState<Scope>("story");
   const [hover, setHover] = useState<Marker | null>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -69,32 +77,51 @@ export default function App() {
     setQuery(text);
     setStatus({ kind: "loading", what: "searching" });
     setResults(null);
+    setExpanded(new Map());
     try {
       const r = await search(text);
-      setResults(r.events);
+      setResults(r.families);
       setStatus({ kind: "ready" });
-      if (r.events.length > 0) void select(r.events[0]);
+      if (r.families.length > 0) void select({ kind: "family", family: r.families[0] });
     } catch (e) {
       setStatus({ kind: "error", message: (e as Error).message });
     }
   }
 
-  async function select(event: MacroEvent, useScope: Scope = scope) {
+  async function incidentsOf(familyId: number): Promise<MacroEvent[]> {
+    const known = expanded.get(familyId);
+    if (known) return known;
+    const detail = await familyDetail(familyId);
+    setExpanded((m) => new Map(m).set(familyId, detail.events));
+    return detail.events;
+  }
+
+  async function select(selection: Selection) {
     abort.current?.abort();
     const controller = new AbortController();
     abort.current = controller;
     setPlaying(false);
     setPlayhead(0);
     setLoaded(null);
-    setStatus({ kind: "loading", what: `loading spread of #${event.macro_event_id}` });
+    const familyId = selection.family.family_id;
+    const target =
+      selection.kind === "family"
+        ? { kind: "family" as const, id: familyId }
+        : { kind: "incident" as const, id: selection.event.macro_event_id };
+    setStatus({
+      kind: "loading",
+      what: `loading spread of ${target.kind === "family" ? "story" : "incident"} #${target.id}`,
+    });
     try {
-      const [spread, att] = await Promise.all([
-        fullSpread(event.macro_event_id, useScope === "story", MIN_CONFIDENCE, controller.signal),
-        eventCountries(event.macro_event_id),
+      const [spread, att, incidents] = await Promise.all([
+        fullSpread(target, MIN_CONFIDENCE, controller.signal),
+        target.kind === "family" ? familyCountries(familyId) : eventCountries(target.id),
+        incidentsOf(familyId),
       ]);
       if (controller.signal.aborted) return;
       setLoaded({
-        event,
+        selection,
+        incidents,
         spread,
         attention: att.publisher_countries,
         worldOnset: att.world_onset,
@@ -174,62 +201,111 @@ export default function App() {
           {status.kind === "loading" && <div className="notice">{status.what}…</div>}
           {results && results.length === 0 && (
             <div className="notice">
-              No macro-event matches “{query}” in this window
+              No story matches “{query}” in this window
               {loadedMeta(loaded)}. Try a different wording or language.
             </div>
           )}
           {results && results.length > 0 && (
             <section>
-              <h2>Matching events</h2>
+              <h2>Matching stories</h2>
               <ol className="results">
-                {results.map((ev) => (
-                  <li
-                    key={ev.macro_event_id}
-                    className={loaded?.event.macro_event_id === ev.macro_event_id ? "active" : ""}
-                  >
-                    <button className="result" onClick={() => void select(ev)}>
-                      <span className="result-title">{ev.title ?? ev.label ?? "(untitled)"}</span>
-                      <span className="result-meta">
-                        {ev.publisher_country_count} countries · {ev.unique_domains} outlets ·{" "}
-                        {ev.raw_documents} articles · {ev.language_count} languages
-                      </span>
-                    </button>
-                  </li>
-                ))}
+                {results.map((fam) => {
+                  const active =
+                    loaded?.selection.kind === "family" &&
+                    loaded.selection.family.family_id === fam.family_id;
+                  const incidents = expanded.get(fam.family_id);
+                  return (
+                    <li key={fam.family_id} className={active ? "active" : ""}>
+                      <button
+                        className="result"
+                        onClick={() => void select({ kind: "family", family: fam })}
+                      >
+                        <span className="result-kind">story family</span>
+                        <span className="result-title">{fam.title ?? fam.label ?? "(untitled)"}</span>
+                        <span className="result-meta">
+                          {fam.publisher_country_count} countries · {fam.raw_documents.toLocaleString()}{" "}
+                          articles · {fam.incident_count} incident{fam.incident_count === 1 ? "" : "s"} ·{" "}
+                          {fam.language_count} languages
+                        </span>
+                      </button>
+                      {fam.incident_count > 1 && !incidents && (
+                        <button
+                          className="link small"
+                          onClick={() => void incidentsOf(fam.family_id).catch(() => undefined)}
+                        >
+                          Explore incidents →
+                        </button>
+                      )}
+                      {incidents && (
+                        <ol className="incidents">
+                          {incidents.map((ev) => {
+                            const on =
+                              loaded?.selection.kind === "incident" &&
+                              loaded.selection.event.macro_event_id === ev.macro_event_id;
+                            return (
+                              <li key={ev.macro_event_id} className={on ? "active" : ""}>
+                                <button
+                                  className="result"
+                                  onClick={() =>
+                                    void select({ kind: "incident", event: ev, family: fam })
+                                  }
+                                >
+                                  <span className="result-title">
+                                    {ev.title ?? ev.label ?? "(untitled)"}
+                                  </span>
+                                  <span className="result-meta">
+                                    {ev.publisher_country_count} countries · {ev.raw_documents}{" "}
+                                    articles
+                                  </span>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ol>
+                      )}
+                    </li>
+                  );
+                })}
               </ol>
             </section>
           )}
 
           {loaded && timeline && (
             <section className="detail">
-              <h2>{loaded.event.title ?? loaded.event.label}</h2>
-              <p className="muted">
-                Incident #{loaded.event.macro_event_id} · {utc(loaded.event.start_time)} →{" "}
-                {utc(loaded.event.end_time)}
-                {loaded.event.event_country && <> · event in {name(loaded.event.event_country, baseline)}</>}
-              </p>
-              <p className="scope" role="radiogroup" aria-label="spread scope">
-                {(
-                  [
-                    ["story", `whole story (family #${loaded.event.family_id})`],
-                    ["incident", "this incident only"],
-                  ] as [Scope, string][]
-                ).map(([s, label]) => (
-                  <button
-                    key={s}
-                    className={`link${scope === s ? " active" : ""}`}
-                    role="radio"
-                    aria-checked={scope === s}
-                    onClick={() => {
-                      if (scope === s) return;
-                      setScope(s);
-                      void select(loaded.event, s);
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </p>
+              {loaded.selection.kind === "family" ? (
+                <>
+                  <h2>{loaded.selection.family.title ?? loaded.selection.family.label}</h2>
+                  <p className="muted">
+                    Story family #{loaded.selection.family.family_id} ·{" "}
+                    {utc(loaded.selection.family.start_time)} → {utc(loaded.selection.family.end_time)}
+                    {loaded.incidents[0]?.event_country && (
+                      <> · event in {name(loaded.incidents[0].event_country, baseline)}</>
+                    )}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2>{loaded.selection.event.title ?? loaded.selection.event.label}</h2>
+                  <p className="muted">
+                    Incident #{loaded.selection.event.macro_event_id} ·{" "}
+                    {utc(loaded.selection.event.start_time)} → {utc(loaded.selection.event.end_time)}
+                    {loaded.selection.event.event_country && (
+                      <> · event in {name(loaded.selection.event.event_country, baseline)}</>
+                    )}
+                  </p>
+                  <p className="scope">
+                    <button
+                      className="link"
+                      onClick={() => {
+                        if (loaded.selection.kind === "incident")
+                          void select({ kind: "family", family: loaded.selection.family });
+                      }}
+                    >
+                      ← whole story (family #{loaded.selection.family.family_id})
+                    </button>
+                  </p>
+                </>
+              )}
               <dl className="stats">
                 <div>
                   <dt>articles</dt>
@@ -266,10 +342,10 @@ export default function App() {
                   <tr>
                     <th>country</th>
                     <th>first seen</th>
-                    {scope === "incident" && <th>lag</th>}
+                    <th>lag</th>
                     <th>articles</th>
                     <th>eff.</th>
-                    {scope === "incident" && <th>ratio</th>}
+                    <th>ratio</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -280,14 +356,10 @@ export default function App() {
                       <tr key={c.publisher_country} className={seen ? "seen" : "pending"}>
                         <td>{name(c.publisher_country, baseline)}</td>
                         <td>{utc(c.first_seen)}</td>
-                        {scope === "incident" && (
-                          <td>{a?.lag_hours == null ? "—" : `${a.lag_hours >= 0 ? "+" : ""}${a.lag_hours.toFixed(1)} h`}</td>
-                        )}
+                        <td>{a?.lag_hours == null ? "—" : `${a.lag_hours >= 0 ? "+" : ""}${a.lag_hours.toFixed(1)} h`}</td>
                         <td>{c.raw_documents}</td>
                         <td>{c.effective_reports}</td>
-                        {scope === "incident" && (
-                          <td>{a?.attention_ratio == null ? "—" : a.attention_ratio.toFixed(2)}</td>
-                        )}
+                        <td>{a?.attention_ratio == null ? "—" : a.attention_ratio.toFixed(2)}</td>
                       </tr>
                     );
                   })}
@@ -295,16 +367,10 @@ export default function App() {
               </table>
               <p className="muted small">
                 Times are when GDELT first observed each URL (15-minute batches), not publication
-                times.
-                {scope === "incident" ? (
-                  <>
-                    {" "}Lag is country onset (3rd outlet or 10th percentile) minus world onset
-                    {loaded.worldOnset ? ` (${utc(loaded.worldOnset)})` : ""}; “—” = fewer than 3
-                    outlets. Ratio = country's share of its own output vs world share.
-                  </>
-                ) : (
-                  <> Lag and attention ratio are computed per incident; switch to “this incident only” to see them.</>
-                )}
+                times. Lag is country onset (3rd outlet or 10th percentile) minus world onset
+                {loaded.worldOnset ? ` (${utc(loaded.worldOnset)})` : ""}; “—” = fewer than 3
+                outlets. Ratio = country's share of its own output vs world share, computed over the{" "}
+                {loaded.selection.kind === "family" ? "whole story" : "incident"}.
               </p>
             </section>
           )}
@@ -447,9 +513,9 @@ function buildTimeline(loaded: Loaded | null, baseline: Map<string, CountryBasel
       kind: "publisher",
     });
   }
-  const ev = loaded.event;
+  const ev = loaded.selection.kind === "incident" ? loaded.selection.event : loaded.incidents[0];
   let focus: [number, number] | null = null;
-  if (ev.lat != null && ev.lon != null) {
+  if (ev && ev.lat != null && ev.lon != null) {
     focus = [ev.lat, ev.lon];
     markers.unshift({
       key: "event",

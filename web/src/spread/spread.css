@@ -91,7 +91,8 @@ body,
 }
 
 .examples .link,
-.scope .link {
+.scope .link,
+.results .link {
   font: inherit;
   color: var(--blue);
   background: none;
@@ -185,6 +186,34 @@ body,
 .result-title {
   display: block;
   font-weight: 500;
+}
+
+.result-kind {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+
+.results .link.small {
+  font-size: 12px;
+  margin: 0 0 6px 10px;
+}
+
+.incidents {
+  list-style: none;
+  padding: 0 0 4px 14px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.incidents li {
+  border-left: 2px solid var(--grey-bg);
+}
+
+.incidents li.active {
+  border-left-color: var(--blue);
 }
 
 .result-meta {

@@ -111,6 +111,8 @@ class AttentionStore:
         self.documents = pl.read_parquet(directory / "macro_event_documents.parquet")
         self.attention = pl.read_parquet(directory / "country_event_attention.parquet")
         self.summary = pl.read_parquet(directory / "country_event_summary.parquet")
+        self.family_attention = pl.read_parquet(directory / "country_family_attention.parquet")
+        self.family_summary = pl.read_parquet(directory / "country_family_summary.parquet")
         self.sources = pl.read_parquet(directory / "sources.parquet")
         self.baseline = pl.read_parquet(directory / "country_baseline.parquet")
         meta = json.loads((directory / "meta.json").read_text(encoding="utf-8"))
@@ -124,6 +126,28 @@ class AttentionStore:
         if frame.is_empty():
             raise HTTPException(404, f"macro-event {event_id} not found")
         return frame
+
+    def family(self, family_id: int) -> pl.DataFrame:
+        frame = self.families.filter(pl.col("family_id") == family_id)
+        if frame.is_empty():
+            raise HTTPException(404, f"family {family_id} not found")
+        return frame
+
+    def family_events(self, family_id: int) -> pl.DataFrame:
+        return self.macro_events.filter(pl.col("family_id") == family_id).select("macro_event_id")
+
+    def search_families(self, hits: pl.DataFrame) -> pl.DataFrame:
+        """Story families of the matching incidents, ranked by matching member titles
+        summed over the family, then publisher-country breadth, then effective reports."""
+        family_hits = hits.group_by("family_id").agg(pl.col("title_hits").sum())
+        return (
+            self.families.join(family_hits, on="family_id")
+            .sort(
+                ["title_hits", "publisher_country_count", "effective_reports"],
+                descending=[True, True, True],
+            )
+            .drop("macro_event_ids")
+        )
 
     def search(self, q: str) -> pl.DataFrame:
         """Macro-events whose summary text or member titles contain every query token.
@@ -183,18 +207,18 @@ def search(
     q: str = Query(..., min_length=1, description="free text; every token must match"),
     limit: int = Query(20, ge=1, le=200),
 ) -> dict:
+    """Story families first (what a user means by "the event"), then the matching
+    incidents; both carry ``title_hits`` so clients can show why they matched."""
     data = store()
     hits = data.search(q)
-    family_ids = hits.select("family_id").unique()
-    families = data.families.join(family_ids, on="family_id").sort(
-        "effective_reports", descending=True
-    )
+    families = data.search_families(hits)
     return data.envelope(
         {
             "query": q,
             "total": hits.height,
-            "events": records(hits.select([*EVENT_SUMMARY_COLUMNS, "title_hits"]).head(limit)),
+            "total_families": families.height,
             "families": records(families.head(limit)),
+            "events": records(hits.select([*EVENT_SUMMARY_COLUMNS, "title_hits"]).head(limit)),
         }
     )
 
@@ -272,13 +296,25 @@ def event_spread(
     counted in ``excluded_documents``."""
     data = store()
     event = data.event(event_id)
+    family_id = int(event["family_id"][0])
     if include_family:
-        ids = data.macro_events.filter(pl.col("family_id") == event["family_id"][0]).select(
-            "macro_event_id"
-        )
-        docs = data.documents.join(ids, on="macro_event_id")
+        docs = data.documents.join(data.family_events(family_id), on="macro_event_id")
     else:
         docs = data.documents.filter(pl.col("macro_event_id") == event_id)
+    payload = spread_payload(docs, min_country_confidence, limit, offset)
+    return data.envelope(
+        {
+            "macro_event_id": event_id,
+            "family_id": family_id,
+            "include_family": include_family,
+            **payload,
+        }
+    )
+
+
+def spread_payload(
+    docs: pl.DataFrame, min_country_confidence: float, limit: int, offset: int
+) -> dict:
     docs = docs.filter(pl.col("is_primary"))
     kept = docs.filter(
         pl.col("publisher_country").is_not_null()
@@ -293,19 +329,14 @@ def event_spread(
         )
         .sort("first_seen", "publisher_country")
     )
-    return data.envelope(
-        {
-            "macro_event_id": event_id,
-            "family_id": int(event["family_id"][0]),
-            "include_family": include_family,
-            "total": kept.height,
-            "excluded_documents": docs.height - kept.height,
-            "offset": offset,
-            "limit": limit,
-            "countries": records(by_country),
-            "documents": records(kept.select(SPREAD_COLUMNS).slice(offset, limit)),
-        }
-    )
+    return {
+        "total": kept.height,
+        "excluded_documents": docs.height - kept.height,
+        "offset": offset,
+        "limit": limit,
+        "countries": records(by_country),
+        "documents": records(kept.select(SPREAD_COLUMNS).slice(offset, limit)),
+    }
 
 
 @router.get("/events/{event_id}/timeline")
@@ -319,6 +350,12 @@ def event_timeline(
     data = store()
     data.event(event_id)
     frame = data.attention.filter(pl.col("macro_event_id") == event_id)
+    return data.envelope(
+        {"macro_event_id": event_id, **timeline_payload(frame, publisher_countries, value)}
+    )
+
+
+def timeline_payload(frame: pl.DataFrame, publisher_countries: str | None, value: str) -> dict:
     if publisher_countries:
         wanted = [c.strip().upper() for c in publisher_countries.split(",") if c.strip()]
         frame = frame.filter(pl.col("publisher_country").is_in(wanted))
@@ -343,15 +380,12 @@ def event_timeline(
         )
         .sort("time_bucket")
     )
-    return data.envelope(
-        {
-            "macro_event_id": event_id,
-            "bucket": "1h",
-            "value": value,
-            "world": records(world),
-            "publisher_countries": records(series),
-        }
-    )
+    return {
+        "bucket": "1h",
+        "value": value,
+        "world": records(world),
+        "publisher_countries": records(series),
+    }
 
 
 @router.get("/events/{event_id}/countries")
@@ -362,35 +396,82 @@ def event_countries(
 ) -> dict:
     data = store()
     data.event(event_id)
-    frame = data.summary.filter(
-        (pl.col("macro_event_id") == event_id) & (pl.col("unique_domains") >= min_unique_domains)
-    )
+    frame = data.summary.filter(pl.col("macro_event_id") == event_id)
+    payload = countries_payload(frame, min_unique_domains, include_suppressed)
+    return data.envelope({"macro_event_id": event_id, **payload})
+
+
+def countries_payload(
+    frame: pl.DataFrame, min_unique_domains: int, include_suppressed: bool
+) -> dict:
+    frame = frame.filter(pl.col("unique_domains") >= min_unique_domains)
     if not include_suppressed:
         frame = frame.filter(~pl.col("suppressed"))
     world_onset = (
         records(frame.select("world_onset").head(1))[0]["world_onset"] if frame.height else None
     )
-    return data.envelope(
-        {
-            "macro_event_id": event_id,
-            "world_onset": world_onset,
-            "publisher_countries": records(frame.select(COUNTRY_SUMMARY_COLUMNS)),
-        }
-    )
+    return {
+        "world_onset": world_onset,
+        "publisher_countries": records(frame.select(COUNTRY_SUMMARY_COLUMNS)),
+    }
 
 
 @router.get("/families/{family_id}")
 def family_detail(family_id: int) -> dict:
     data = store()
-    family = data.families.filter(pl.col("family_id") == family_id)
-    if family.is_empty():
-        raise HTTPException(404, f"family {family_id} not found")
+    family = data.family(family_id)
     events = data.macro_events.filter(pl.col("family_id") == family_id).sort(
         "effective_reports", descending=True
     )
     return data.envelope(
         {"family": records(family)[0], "events": records(events.select(EVENT_SUMMARY_COLUMNS))}
     )
+
+
+@router.get("/families/{family_id}/spread")
+def family_spread(
+    family_id: int,
+    min_country_confidence: float = Query(0.0, ge=0.0, le=1.0),
+    limit: int = Query(500, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
+) -> dict:
+    """Chronological primary documents of every incident in the story family."""
+    data = store()
+    data.family(family_id)
+    docs = data.documents.join(data.family_events(family_id), on="macro_event_id")
+    payload = spread_payload(docs, min_country_confidence, limit, offset)
+    return data.envelope({"family_id": family_id, **payload})
+
+
+@router.get("/families/{family_id}/timeline")
+def family_timeline(
+    family_id: int,
+    publisher_countries: str | None = Query(None, description="comma-separated FIPS codes"),
+    value: str = Query(
+        "raw_documents", pattern="^(raw_documents|unique_domains|effective_reports|raw_share)$"
+    ),
+) -> dict:
+    data = store()
+    data.family(family_id)
+    frame = data.family_attention.filter(pl.col("family_id") == family_id)
+    return data.envelope(
+        {"family_id": family_id, **timeline_payload(frame, publisher_countries, value)}
+    )
+
+
+@router.get("/families/{family_id}/countries")
+def family_countries(
+    family_id: int,
+    min_unique_domains: int = Query(1, ge=1),
+    include_suppressed: bool = Query(True),
+) -> dict:
+    """Story-level country attention: lag and ratio computed over the whole family,
+    so they are comparable across incidents of different sizes."""
+    data = store()
+    data.family(family_id)
+    frame = data.family_summary.filter(pl.col("family_id") == family_id)
+    payload = countries_payload(frame, min_unique_domains, include_suppressed)
+    return data.envelope({"family_id": family_id, **payload})
 
 
 @router.get("/event-types")
