@@ -1,3 +1,22 @@
+# Web
+
+Two Vite entries share this package:
+
+- `spread.html` — **Show the spread of …**: search a macro-event, then watch
+  where its coverage appeared as red markers on a white globe (publisher
+  country, chronological by GDELT observed time). Needs the attention store:
+
+  ```sh
+  GDELT_ATTENTION_DATA=data/store/<window> uv run uvicorn api.app:app --port 8000
+  cd web && npm install && npm run dev   # open http://localhost:5173/spread.html
+  ```
+
+  It calls `/api/v2/attention/search`, `/countries`, `/events/{id}/spread`
+  (`include_family=false`, `min_country_confidence=0.5`) and
+  `/events/{id}/countries`. Markers sit at country centroids from
+  `country_baseline.parquet`; countries without one are listed as "not drawn".
+- `index.html` — the older GDELT Explorer described below.
+
 # GDELT Explorer
 
 The GDELT Explorer is a local web interface for searching and visualizing the

@@ -80,6 +80,7 @@ class ClusterSettings:
     corroboration_min_channels: int = 2
     family_title_threshold: float = 0.4
     family_entity_threshold: float = 0.2
+    family_strong_title: float = 0.7
     secondary_min_score: float = 0.25
 
 
@@ -473,22 +474,56 @@ def incident_top_entities(
     }
 
 
+def incident_corroboration(
+    incident: np.ndarray,
+    documents: pl.DataFrame,
+    links: pl.DataFrame | None,
+    n_incidents: int,
+) -> tuple[dict[int, set[str]], dict[int, set[int]], np.ndarray, np.ndarray]:
+    """Per incident: top entities, GlobalEventIDs, and [start, end] of first_seen (s)."""
+    top = incident_top_entities(incident, documents)
+    events: dict[int, set[int]] = {}
+    if links is not None and links.height:
+        linked = (
+            pl.DataFrame({"document_id": np.arange(len(incident)), "incident": incident})
+            .filter(pl.col("incident") >= 0)
+            .join(links.select("document_id", "GlobalEventID"), on="document_id")
+            .group_by("incident")
+            .agg(pl.col("GlobalEventID").unique())
+        )
+        events = {
+            int(i): set(e) for i, e in zip(linked["incident"], linked["GlobalEventID"], strict=True)
+        }
+    seen = documents["first_seen"].dt.epoch("s").to_numpy().astype(np.float64)
+    assigned = incident >= 0
+    start = np.full(n_incidents, np.inf)
+    end = np.full(n_incidents, -np.inf)
+    np.minimum.at(start, incident[assigned], seen[assigned])
+    np.maximum.at(end, incident[assigned], seen[assigned])
+    return top, events, start, end
+
+
 def link_families(
     incident: np.ndarray,
     documents: pl.DataFrame,
     title: TitleChannel | None,
     settings: ClusterSettings,
+    links: pl.DataFrame | None = None,
 ) -> np.ndarray:
     """Group incidents into story families. Title-capable windows: an incident graph
-    weighted by centroid cosine (all pairs >= ``family_title_threshold``), partitioned
-    with CPM-Leiden at ``family_resolution`` so a family's mean incident-to-incident
-    similarity stays above that value. Legacy windows: top-entity Jaccard edges
+    weighted by calibrated centroid cosine, keeping a pair only when (a) the score is
+    >= ``family_title_threshold``, (b) the incidents' first_seen ranges lie within
+    ``candidate_max_hours`` of each other, and (c) they share a top entity or a
+    GlobalEventID unless the score is >= ``family_strong_title``; partitioned with
+    CPM-Leiden at ``family_resolution``. Legacy windows: top-entity Jaccard edges
     instead. Returns family id per incident id."""
     n_incidents = int(incident.max()) + 1 if incident.size and incident.max() >= 0 else 0
     if n_incidents == 0:
         return np.zeros(0, dtype=np.int64)
     edges: dict[tuple[int, int], float] = {}
     if title is not None and title.dimension:
+        top, events, t0, t1 = incident_corroboration(incident, documents, links, n_incidents)
+        max_gap = settings.candidate_max_hours * 3600.0
         rows = title.row_of
         assigned = np.flatnonzero((incident >= 0) & (rows >= 0))
         centroids = np.zeros((n_incidents, title.dimension), dtype=np.float32)
@@ -508,13 +543,19 @@ def link_families(
             src, dst = np.nonzero(block >= settings.family_title_threshold)
             src_abs = src + start
             keep = (src_abs < dst) & has_centroid[src_abs] & has_centroid[dst]
+            gap = np.maximum(t0[src_abs] - t1[dst], t0[dst] - t1[src_abs])
+            keep &= gap <= max_gap
             for a, b, w in zip(
                 src_abs[keep].tolist(),
                 dst[keep].tolist(),
                 block[src[keep], dst[keep]].tolist(),
                 strict=True,
             ):
-                edges[(a, b)] = float(w)
+                corroborated = bool(top.get(a, set()) & top.get(b, set())) or bool(
+                    events.get(a, set()) & events.get(b, set())
+                )
+                if corroborated or w >= settings.family_strong_title:
+                    edges[(a, b)] = float(w)
         graph = ig.Graph(n=n_incidents, edges=list(edges))
         return cpm_leiden(graph, list(edges.values()), settings.family_resolution, settings.seed)
     top = incident_top_entities(incident, documents)
@@ -667,7 +708,7 @@ def run(features: Path, embeddings: Path | None, output: Path, settings: Cluster
     incident = (
         leiden(edges, count, settings) if edges.height else np.full(count, -1, dtype=np.int64)
     )
-    family_of_incident = link_families(incident, documents, title, settings)
+    family_of_incident = link_families(incident, documents, title, settings, links)
     family = np.where(incident >= 0, family_of_incident[np.maximum(incident, 0)], -1)
     member = (
         memberships(edges, incident, settings)
