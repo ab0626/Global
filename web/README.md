@@ -1,3 +1,39 @@
+# Web
+
+Two Vite entries share this package:
+
+- `spread.html` — **Show the spread of …**: search a macro-event, then watch
+  where its coverage appeared as red markers on a white globe (publisher
+  country, chronological by GDELT observed time). Needs the attention store:
+
+  ```sh
+  GDELT_ATTENTION_DATA=data/store/<window> uv run uvicorn api.app:app --port 8000
+  cd web && npm install && npm run dev   # open http://localhost:5173/spread.html
+  ```
+
+  It calls `/api/v2/attention/search`, `/countries`, `/events/{id}/spread`
+  (`include_family` follows the "whole story / this incident only" toggle, default whole story; `min_country_confidence=0.5`) and
+  `/events/{id}/countries`. Markers sit at country centroids from
+  `country_baseline.parquet`; countries without one are listed as "not drawn".
+  Clicking an article in "Earliest articles" opens the evidence panel
+  (`/documents/{id}/evidence`): assignment score, the checks derived from its
+  strongest same-incident graph edges, and the best competing edge.
+- `index.html` — the older GDELT Explorer described below.
+
+## Globe texture provenance
+
+`public/textures/earth_{atmos,normal,specular}_2048.jpg` and
+`earth_clouds_1024.png` are byte-identical copies of
+`examples/textures/planets/*` from the three.js repository
+(https://github.com/mrdoob/three.js, MIT License, © 2010–present three.js
+authors; the atmos/normal/specular files match tag r160, the clouds file
+matches `dev` as of Sep 2026). The `*_1024.jpg` files are our own downscales of
+those. three.js does not publish a per-file source for these images; the
+underlying imagery is commonly attributed to NASA Blue Marble / Visible Earth
+(public domain), but we have not verified that chain independently, so the
+licence we rely on is three.js's MIT. Stars, sun and moon are procedural
+(drei `<Stars>` + plain meshes), no external assets.
+
 # GDELT Explorer
 
 The GDELT Explorer is a local web interface for searching and visualizing the
