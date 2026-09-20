@@ -46,12 +46,12 @@ def test_onset_requires_k_outlets_and_tenth_percentile() -> None:
         {
             "macro_event_id": [0] * len(rows),
             "source_domain": [r[0] for r in rows],
-            "mention_time": pl.Series([r[1] for r in rows], dtype=pl.Datetime("us", "UTC")),
+            "observed_time": pl.Series([r[1] for r in rows], dtype=pl.Datetime("us", "UTC")),
         }
     )
     result = onset(assigned, ["macro_event_id"])
-    assert result["onset_outlets_time"][0] == ts(17)
-    assert result["onset_time"][0] == ts(17)
+    assert result["third_source_seen"][0] == ts(17)
+    assert result["onset"][0] == ts(17)
     thin = assigned.head(2)
     assert onset(thin, ["macro_event_id"]).is_empty()
 
