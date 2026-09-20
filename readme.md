@@ -20,8 +20,15 @@ attention order, not transmission. Full write-up: [`docs/project-report.md`](doc
 
 ## About
 
-Built for **HackMIT 2026**, Voloridge's *"Signal in the Noise"* challenge:
-find real structure in a large, noisy, redundant dataset and make it legible.
+Built at **HackMIT 2026** for the **Education track**, and submitted to the
+**Voloridge** (*"Signal in the Noise"*), **Cognition** and **Ramp** sponsor
+challenges. The educational goal: let anyone — a student, a journalist, a
+policy class — pick a real-world event and *see* how the world's media noticed
+it: which countries reported first, which lagged, how attention grew hour by
+hour, and, for any single article, why the system believes it belongs to that
+event. The technical goal is the Voloridge brief: find real structure in a
+large, noisy, redundant dataset and make it legible.
+
 Our dataset is [GDELT](https://www.gdeltproject.org/), which monitors news in
 65+ languages every 15 minutes — on our benchmark window ~300k documents a day,
 most of them syndicated copies, translations or near-duplicates of far fewer
