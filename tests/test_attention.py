@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -251,7 +252,15 @@ def test_gate_vetoes_thin_single_channel_evidence_but_keeps_corroborated_pairs()
     assert gated[4] == 0.0
     relaxed = ClusterSettings(single_channel_min_features=1, single_channel_title_veto=0.0)
     assert apply_gate(frame, relaxed)["gated"].to_list()[0] == 0.5
-    assert apply_gate(frame, relaxed)["gated"].to_list()[4] == 0.5
+    # ...but an untitled node still needs two channels unless that rule is relaxed too
+    assert apply_gate(frame, relaxed)["gated"].to_list()[4] == 0.0
+    legacy = dataclasses.replace(relaxed, titleless_min_channels=1)
+    assert apply_gate(frame, legacy)["gated"].to_list()[4] == 0.5
+    # a lone 0.6 title carries a same-language pair but not a cross-language one
+    frame = frame.with_columns(pl.Series("same_language", [True, True, False, True, True]))
+    assert apply_gate(frame, ClusterSettings())["gated"].to_list()[2] == 0.0
+    lenient = ClusterSettings(cross_language_title_floor=0.55)
+    assert apply_gate(frame, lenient)["gated"].to_list()[2] == 0.6
 
 
 def test_evaluation_metrics_on_perfect_and_split_clusterings() -> None:

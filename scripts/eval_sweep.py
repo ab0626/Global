@@ -26,7 +26,13 @@ import polars as pl
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from attention.cluster import ClusterSettings, apply_gate, load_inputs, partition  # noqa: E402
+from attention.cluster import (  # noqa: E402
+    ClusterSettings,
+    apply_gate,
+    load_inputs,
+    partition,
+    with_same_language,
+)
 from attention.evaluate import evaluate  # noqa: E402
 
 STAGES: dict[str, list[dict]] = {
@@ -35,6 +41,11 @@ STAGES: dict[str, list[dict]] = {
         for v in (0.0, 0.15, 0.25)
         for m in (1, 2, 3)
         for t in (0.3, 0.4)
+    ],
+    "bridge": [
+        {"titleless_min_channels": m, "cross_language_title_floor": f}
+        for m in (1, 2)
+        for f in (0.55, 0.6, 0.65, 0.7)
     ],
     "leiden": [{"resolution": r} for r in (0.02, 0.05, 0.1, 0.2)],
     "family": [
@@ -115,7 +126,9 @@ def main() -> None:
     settings0 = ClusterSettings(**base)
     documents, links, title, _ = load_inputs(args.features, args.embeddings, settings0)
     candidates = pl.read_parquet(args.pairs_from / "candidate_pairs.parquet")
-    raw_pairs = pl.read_parquet(args.pairs_from / "pair_features.parquet")
+    raw_pairs = with_same_language(
+        pl.read_parquet(args.pairs_from / "pair_features.parquet"), documents
+    )
     channels = json.loads((args.pairs_from / "run.json").read_text())["channels"]
 
     rows = []

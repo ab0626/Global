@@ -84,6 +84,14 @@ class ClusterSettings:
     # ...and both documents need this many features in that channel: a one-token URL
     # path or a single site-wide GlobalEventID gives cosine 1.0 without meaning it
     single_channel_min_features: int = 2
+    # a pair where either document has no usable title (missing, or site boilerplate
+    # excluded from the title channel) needs this many evidence channels: such nodes
+    # are the bridges that glue unrelated incidents ("Primeira Edição", untitled feeds)
+    titleless_min_channels: int = 2
+    # a lone title match between documents in different languages must clear this
+    # (background-calibrated) score: the multilingual encoder rates topical kin
+    # ("train derails in Ohio" ~ "Indian Railways hygiene") ~0.55-0.6 across languages
+    cross_language_title_floor: float = 0.65
     family_title_threshold: float = 0.4
     family_entity_threshold: float = 0.2
     family_strong_title: float = 0.7
@@ -308,17 +316,25 @@ def apply_gate(frame: pl.DataFrame, settings: ClusterSettings) -> pl.DataFrame:
     rescoring. A pair passes when >= ``corroboration_min_channels`` channels show
     evidence, or one channel is above its floor -- but a lone event/url/entity channel
     cannot carry a pair whose titles both exist and disagree, nor one where either
-    document has fewer than ``single_channel_min_features`` features in that channel."""
+    document has fewer than ``single_channel_min_features`` features in that channel,
+    nor one where either document lacks a usable title unless
+    ``titleless_min_channels`` channels agree. A lone title carries a cross-language
+    pair (``same_language`` false) only above ``cross_language_title_floor``."""
     n = frame.height
     evidence = np.zeros(n, dtype=np.int64)
     strong = np.zeros(n, dtype=bool)
     title_agrees = np.ones(n, dtype=bool)
+    both = np.ones(n, dtype=bool)
     if "title_score" in frame.columns:
         scores = frame["title_score"].to_numpy()
         both = frame["title_both"].to_numpy()
         title_agrees = ~both | (scores >= settings.single_channel_title_veto)
         evidence += (scores >= CHANNEL_EVIDENCE_MIN["title"]).astype(np.int64)
-        strong |= scores >= CHANNEL_FLOORS["title"]
+        floor = np.full(n, CHANNEL_FLOORS["title"])
+        if "same_language" in frame.columns:
+            cross = ~frame["same_language"].to_numpy()
+            floor[cross] = max(CHANNEL_FLOORS["title"], settings.cross_language_title_floor)
+        strong |= scores >= floor
     for name in ("event", "url", "entity"):
         if f"{name}_score" not in frame.columns:
             continue
@@ -327,6 +343,7 @@ def apply_gate(frame: pl.DataFrame, settings: ClusterSettings) -> pl.DataFrame:
         evidence += (scores >= CHANNEL_EVIDENCE_MIN[name]).astype(np.int64)
         strong |= (scores >= CHANNEL_FLOORS[name]) & rich & title_agrees
     gate = (evidence >= settings.corroboration_min_channels) | strong
+    gate &= both | (evidence >= settings.titleless_min_channels)
     combined = frame["combined"].to_numpy()
     return frame.with_columns(
         pl.Series("evidence_channels", evidence),
@@ -344,10 +361,13 @@ def score_pairs(
     first_seen: np.ndarray,
     settings: ClusterSettings,
     batch: int,
+    languages: np.ndarray | None = None,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
     left, right = keys // count, keys % count
     hours = np.abs(first_seen[left] - first_seen[right]) / 3600.0
     frame = pl.DataFrame({"left": left, "right": right, "delta_hours": hours})
+    if languages is not None:
+        frame = frame.with_columns(pl.Series("same_language", languages[left] == languages[right]))
     for name, proposed in proposed_by.items():
         frame = frame.with_columns(pl.Series(f"from_{name}", np.isin(keys, proposed)))
     candidates = frame
@@ -685,6 +705,19 @@ def main() -> None:
     run(args.features, args.embeddings, args.output, settings, reuse_pairs=args.reuse_pairs)
 
 
+def document_languages(documents: pl.DataFrame) -> np.ndarray:
+    return documents["language"].fill_null("und").to_numpy()
+
+
+def with_same_language(pairs: pl.DataFrame, documents: pl.DataFrame) -> pl.DataFrame:
+    """Backfill ``same_language`` on pair_features written before the column existed."""
+    if "same_language" in pairs.columns:
+        return pairs
+    languages = document_languages(documents)
+    left, right = pairs["left"].to_numpy(), pairs["right"].to_numpy()
+    return pairs.with_columns(pl.Series("same_language", languages[left] == languages[right]))
+
+
 def load_inputs(
     features: Path, embeddings: Path | None, settings: ClusterSettings
 ) -> tuple[pl.DataFrame, pl.DataFrame, TitleChannel | None, dict]:
@@ -751,7 +784,10 @@ def run(
         audit["channels"] = previous["channels"]
         audit["reused_pairs_from"] = str(reuse_pairs)
         candidates = pl.read_parquet(reuse_pairs / "candidate_pairs.parquet")
-        pairs = apply_gate(pl.read_parquet(reuse_pairs / "pair_features.parquet"), settings)
+        pairs = apply_gate(
+            with_same_language(pl.read_parquet(reuse_pairs / "pair_features.parquet"), documents),
+            settings,
+        )
         return partition(
             candidates, pairs, documents, links, title, settings, output, audit, started
         )
@@ -792,6 +828,7 @@ def run(
         first_seen,
         settings,
         article.scoring_batch_size,
+        document_languages(documents),
     )
     return partition(candidates, pairs, documents, links, title, settings, output, audit, started)
 
