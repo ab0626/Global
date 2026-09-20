@@ -7,6 +7,7 @@ import { DEFAULT_CONFIG, resolveConfig, type GlobeConfig } from "./config";
 import { Earth } from "./Earth";
 import { toVector } from "./geo";
 import { CountryMarkers, OriginMarker } from "./Markers";
+import { Sky } from "./Sky";
 import type { CountryMarker, Hover, Origin } from "./types";
 
 export type RippleGlobeProps = {
@@ -14,6 +15,8 @@ export type RippleGlobeProps = {
   origin: Origin | null;
   /** Playhead seconds; markers with `t <= now` are lit. */
   now: number;
+  /** Absolute UTC epoch (ms) at the playhead; drives the sun position. Null = studio light. */
+  time?: number | null;
   onHover?: (hover: Hover | null) => void;
   config?: Partial<GlobeConfig>;
 };
@@ -21,12 +24,14 @@ export type RippleGlobeProps = {
 /** Hero 3D Earth: textured sphere with relief + atmosphere, a blue event-origin
  * beacon (where the event happened) and red publisher-country markers (where the
  * outlets covering it are based) lighting up in observed-time order. */
-export function RippleGlobe({ markers, origin, now, onHover, config }: RippleGlobeProps) {
+export function RippleGlobe({ markers, origin, now, time = null, onHover, config }: RippleGlobeProps) {
   const resolved = useMemo(() => resolveConfig(config), [config]);
   const nowRef = useRef(now);
+  const timeRef = useRef<number | null>(time);
   useEffect(() => {
     nowRef.current = now;
-  }, [now]);
+    timeRef.current = resolved.realSun ? time : null;
+  }, [now, time, resolved.realSun]);
   const hover = onHover ?? (() => undefined);
   const dark = resolved.background === "dark";
 
@@ -38,9 +43,9 @@ export function RippleGlobe({ markers, origin, now, onHover, config }: RippleGlo
       camera={{ fov: resolved.camera.fov, near: 0.05, far: 50, position: [0, 0, resolved.camera.distance] }}
       onPointerMissed={() => hover(null)}
     >
-      <ambientLight intensity={dark ? 0.25 : 0.7} />
-      <directionalLight position={[-4, 2.5, 3]} intensity={dark ? 2.4 : 2.2} color="#ffffff" />
-      <directionalLight position={[4, -1, -3]} intensity={dark ? 0.15 : 0.35} color="#dbe6ff" />
+      <ambientLight intensity={dark ? 0.22 : 0.7} />
+      <Sky time={timeRef} dark={dark} fallback={STUDIO_LIGHT} />
+      <directionalLight position={[4, -1, -3]} intensity={dark ? 0.12 : 0.35} color="#dbe6ff" />
       <Suspense fallback={<Placeholder dark={dark} />}>
         <Earth config={resolved} />
       </Suspense>
@@ -50,6 +55,8 @@ export function RippleGlobe({ markers, origin, now, onHover, config }: RippleGlo
     </Canvas>
   );
 }
+
+const STUDIO_LIGHT: [number, number, number] = [-4, 2.5, 3];
 
 function Placeholder({ dark }: { dark: boolean }) {
   return (

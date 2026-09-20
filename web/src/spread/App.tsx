@@ -413,6 +413,7 @@ export default function App() {
               markers={timeline?.markers ?? []}
               origin={timeline?.origin ?? null}
               now={playhead}
+              time={clock?.getTime() ?? null}
               onHover={setHover}
               config={globeConfig}
             />
@@ -432,6 +433,7 @@ export default function App() {
               <span><i className="swatch origin" /> event location</span>
               <span><i className="swatch active" /> publisher country (outlet base)</span>
               {arcs && <span className="muted">arcs show attention order, not transmission</span>}
+              {clock && <span className="muted">daylight follows the clock (UTC)</span>}
             </div>
           </div>
           {timeline && (

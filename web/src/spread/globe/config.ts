@@ -21,6 +21,9 @@ export type GlobeConfig = {
   animationSeconds: number;
   /** Degrees per second of idle auto-rotation; 0 disables. */
   autoRotate: number;
+  /** Light the Earth from the real sub-solar point of the playhead's UTC time
+   * (dark mode also draws the sun, moon and stars); false = fixed studio light. */
+  realSun: boolean;
   camera: { distance: number; minDistance: number; maxDistance: number; fov: number };
   /** Palette; defaults follow the Ripple white/grey/red/blue/black scheme. */
   colors: { origin: string; active: string; arc: string; atmosphere: string; ring: string };
@@ -37,6 +40,7 @@ export const DEFAULT_CONFIG: GlobeConfig = {
   rippleStrength: 0.8,
   animationSeconds: 1.4,
   autoRotate: 0.6,
+  realSun: true,
   camera: { distance: 3.6, minDistance: 1.6, maxDistance: 6, fov: 40 },
   colors: {
     origin: "#1f4fd8",

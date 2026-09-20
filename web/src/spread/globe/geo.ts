@@ -48,3 +48,31 @@ export function countBefore(times: number[], value: number): number {
 }
 
 export const easeOut = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+
+const DAY = 86_400_000;
+const OBLIQUITY = 23.44;
+/** Mean synodic month; new moon reference 2000-01-06 18:14 UTC. */
+const SYNODIC_MS = 29.530588853 * DAY;
+const NEW_MOON_EPOCH = Date.UTC(2000, 0, 6, 18, 14);
+
+/** Sub-solar point (lat, lon) for a UTC epoch, ignoring the equation of time
+ * (error < 4° of longitude, i.e. < 16 minutes). */
+export function subsolarPoint(epochMs: number): { lat: number; lon: number } {
+  const date = new Date(epochMs);
+  const startOfYear = Date.UTC(date.getUTCFullYear(), 0, 0);
+  const dayOfYear = (epochMs - startOfYear) / DAY;
+  const lat = -OBLIQUITY * Math.cos((2 * Math.PI * (dayOfYear + 10)) / 365.2422);
+  const hoursUtc = (epochMs % DAY) / 3_600_000;
+  const lon = 180 - hoursUtc * 15;
+  return { lat, lon: ((lon + 540) % 360) - 180 };
+}
+
+/** Moon direction: sun longitude advanced by the lunar phase angle, with a small
+ * latitude offset so it never sits exactly behind the sun. Phase-accurate, not an
+ * ephemeris — good enough to decide day side vs night side. */
+export function moonPoint(epochMs: number): { lat: number; lon: number } {
+  const sun = subsolarPoint(epochMs);
+  const phase = ((epochMs - NEW_MOON_EPOCH) % SYNODIC_MS) / SYNODIC_MS;
+  const lon = sun.lon - phase * 360;
+  return { lat: sun.lat * 0.6 + 5 * Math.sin(phase * 2 * Math.PI), lon: ((lon + 540) % 360) - 180 };
+}
