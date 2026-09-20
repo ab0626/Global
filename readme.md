@@ -18,6 +18,31 @@ publisher countries over time on an interactive 3D globe.
 countries (where the outlet is based), lit in observation order. Arcs show
 attention order, not transmission. Full write-up: [`docs/project-report.md`](docs/project-report.md).*
 
+## About
+
+Built for **HackMIT 2026**, Voloridge's *"Signal in the Noise"* challenge:
+find real structure in a large, noisy, redundant dataset and make it legible.
+Our dataset is [GDELT](https://www.gdeltproject.org/), which monitors news in
+65+ languages every 15 minutes — on our benchmark window ~300k documents a day,
+most of them syndicated copies, translations or near-duplicates of far fewer
+actual events.
+
+Ripple treats this as a **research problem in event resolution under
+uncertainty**. Each article is a noisy observation of an unknown real-world
+event; four independent evidence channels (calibrated multilingual title
+similarity, IDF-weighted `GlobalEventID` overlap, rare URL-slug tokens, rare
+GKG persons/organisations) vote on whether two articles observe the same event,
+an evidence gate refuses to link on a single weak signal, and Constant Potts
+Model Leiden clustering resolves the surviving graph into incidents and story
+families. Articles without sufficient evidence are left unassigned by design —
+*abstention over false certainty*. Every assignment is explainable per article,
+every run is deterministic, and every quality number is measured against
+labelled data.
+
+Stack: Python 3.12 · Polars · sentence-transformers · FAISS · igraph/Leiden ·
+FastAPI · React + TypeScript · Three.js / React Three Fiber. Full technical
+write-up: [`docs/project-report.md`](docs/project-report.md).
+
 Ripple is designed for GDELT's multi-terabyte archive; every number below comes
 from the one fully processed three-day window (Feb 6–8 2023: Turkey–Syria
 earthquake, Chinese balloon, State of the Union, Grammys, Ohio derailment).
